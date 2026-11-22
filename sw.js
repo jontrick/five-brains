@@ -1,5 +1,5 @@
 // 5 Brains service worker — bump VERSION on every deploy to refresh the cache.
-const VERSION = 'fb-1.8.2';
+const VERSION = 'fb-1.8.3';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
 
@@ -14,8 +14,11 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;                       // API writes go straight to network
   if (u.hostname.endsWith('supabase.co') || u.hostname.endsWith('workers.dev')) return;
   // App shell: network first (so deploys land), fall back to cache offline.
+  // Same-origin files revalidate every time (ETag, cheap) instead of trusting
+  // GitHub Pages' 10-minute max-age — otherwise a push can take 10 min to land.
+  const req = u.origin === self.location.origin ? new Request(e.request, { cache: 'no-cache' }) : e.request;
   e.respondWith(
-    fetch(e.request).then(r => { const cp = r.clone(); caches.open(VERSION).then(c => c.put(e.request, cp)); return r; })
+    fetch(req).then(r => { const cp = r.clone(); caches.open(VERSION).then(c => c.put(e.request, cp)); return r; })
       .catch(() => caches.match(e.request).then(r => r || (e.request.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
   );
 });

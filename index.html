@@ -374,6 +374,7 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="fold-sum" id="tkSum"></div>
     <div class="fold-body"><div class="habits" id="habits"></div></div>
   </div>
+  <p class="small muted" id="verLine" style="text-align:center;margin:14px 0 4px"></p>
 </section>
 
 <!-- ═════════ JOURNAL ═════════ -->
@@ -528,7 +529,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.8.2';
+var APP_VERSION = '1.8.3';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -805,6 +806,7 @@ function renderToday(){
     tg.textContent=(open?'▾ Hide ':'▸ ')+doneEls.length+' done'; tg.onclick=function(){ FOLD.ticksDone=!open; renderToday(); }; box.appendChild(tg);
     if(open) doneEls.forEach(function(e){ box.appendChild(e); }); }
   var tk=$('#tkTag'); tk.textContent=reqDone+'/'+req; tk.className='tag'+(req&&reqDone===req?' ok':'');
+  var vl=$('#verLine'); if(vl) vl.textContent='5 Brains v'+APP_VERSION+(S.lastSync?' · synced '+new Date(S.lastSync).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}):'');
   renderPhoenix(); renderQuestion(); renderPulse(); renderRecovery(); applyFolds();
   $$('[data-yn]').forEach(function(g){ var v=d[g.dataset.yn]; $$('button',g).forEach(function(b){ b.classList.toggle('on', v!=null && (b.dataset.v==='1')===v); }); });
   // today's entries
@@ -1659,7 +1661,15 @@ hydrateIcons(document); applySkin(S.settings.skin); bindToday(); bindRec(); bind
 document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); } });
 window.addEventListener('online',function(){ fullSync(); });
 var _lastDay=todayKey(); setInterval(function(){ if(todayKey()!==_lastDay){ _lastDay=todayKey(); FOLD={}; renderAll(); } },60000);
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+if('serviceWorker' in navigator){
+  // updateViaCache:'none' = always fetch sw.js fresh; check again whenever the app comes back to the front.
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) reg.update().catch(function(){}); });
+  }).catch(function(){});
+  // When a new version takes over, reload once so you're on it straight away.
+  var _swReloaded=false, _hadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!_hadController||_swReloaded) return; _swReloaded=true; location.reload(); });
+}
 </script>
 </body>
 </html>
