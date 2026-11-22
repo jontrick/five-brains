@@ -342,12 +342,6 @@ table.tod th{color:var(--mut);font-weight:500}
     <p class="small muted" style="margin:8px 0 0">Tap a tile to log or edit it. Walk opens a timer with GPS; meals come from your Phoenix ticks.</p>
   </div>
 
-  <div class="card fold" data-fold="q" id="qCard">
-    <h2><i data-ic="compass"></i> Evening question <span class="tag" id="qTag"></span></h2>
-    <div class="fold-sum" id="qSum"></div>
-    <div class="fold-body"><div id="qBody"></div></div>
-  </div>
-
   <div class="card fold" data-fold="pm">
     <h2><i data-ic="moon"></i> Evening check-in <span class="tag" id="pmTag"></span></h2>
     <div class="fold-sum" id="pmSum"></div>
@@ -368,6 +362,8 @@ table.tod th{color:var(--mut);font-weight:500}
     <input data-t="win" placeholder="What went well">
     <div class="lbl"><span>Grateful for</span></div>
     <input data-t="gratitude" placeholder="One thing">
+    <div class="lbl" style="margin-top:16px"><span>Tonight's question</span><span class="tag" id="qTag"></span></div>
+    <div id="qBody"></div>
     </div>
   </div>
 
@@ -530,7 +526,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.8.0';
+var APP_VERSION = '1.8.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -779,7 +775,7 @@ function renderToday(){
   var at=$('#amThoughts'); if(document.activeElement!==at && !DICT.on) at.value = (d.log&&d.log.am_thoughts)||'';
   $('#slpV').textContent = d.sleep_hours!=null ? d.sleep_hours+' h' : '–';
   setTag('#amTag', autoVal({auto:'am_checkin'},k));
-  setTag('#pmTag', autoVal({auto:'pm_checkin'},k));
+  setTag('#pmTag', autoVal({auto:'pm_checkin'},k) && autoVal({auto:'question'},k));
   // water
   var ml=waterMl(k), tg=+S.settings.water||3000;
   var nb=Math.max(1,Math.round(tg/1500)), bh='';
@@ -819,8 +815,7 @@ function isFolded(key){
   if(key in FOLD) return FOLD[key];
   var k=todayKey(), arvo=bris().getHours()>=15, v=false, d=S.days[k]||{};
   if(key==='am') v=amComplete(k) || !!(d.log&&d.log.amDone);
-  else if(key==='pm') v=autoVal({auto:'pm_checkin'},k) || !arvo;
-  else if(key==='q') v=autoVal({auto:'question'},k) || !arvo;
+  else if(key==='pm') v=(autoVal({auto:'pm_checkin'},k) && autoVal({auto:'question'},k)) || !arvo;
   else if(key==='pulse' || key==='ticks') v=true;
   FOLD[key]=v; return v;   // snapshot: cards never fold while you're typing in them
 }
@@ -828,8 +823,8 @@ function applyFolds(){
   $$('.card.fold').forEach(function(c){ c.classList.toggle('folded', isFolded(c.dataset.fold)); });
   var d=day(), k=todayKey(), arvo=bris().getHours()>=15, L=d.log||{};
   $('#amSum').textContent = (d.sleep_hours||d.energy_am) ? ((d.sleep_hours?d.sleep_hours+' h sleep':'')+(d.sleep_quality?' · '+slOf('sleep_quality')[d.sleep_quality-1].toLowerCase()+' sleep':'')+(d.energy_am?' · energy '+slOf('energy')[d.energy_am-1].toLowerCase():'')+(d.intention?' · '+d.intention:'')) : 'Tap to start';
-  $('#pmSum').textContent = autoVal({auto:'pm_checkin'},k) ? ('Energy '+slOf('energy')[d.energy_pm-1].toLowerCase()+' · mood '+slOf('mood')[d.mood-1].toLowerCase()+' · stress '+slOf('stress')[d.stress-1].toLowerCase()+(d.win?' · '+d.win:'')) : (arvo?'Tap to start':'Opens this arvo. Tap to open now.');
-  var q=L.q; $('#qSum').textContent = (q&&q.answer) ? ('Answered'+(q.read&&q.read.primary?' · '+q.read.primary.brain+' '+q.read.primary.state:'')+'. Tap to see.') : (arvo?'Tap to answer':'Opens this arvo. Tap to see it now.');
+  var pmDone=autoVal({auto:'pm_checkin'},k), q=L.q, qDone=!!(q&&q.answer);
+  $('#pmSum').textContent = (pmDone||qDone) ? ((pmDone?'Energy '+slOf('energy')[d.energy_pm-1].toLowerCase()+' · mood '+slOf('mood')[d.mood-1].toLowerCase()+' · stress '+slOf('stress')[d.stress-1].toLowerCase():'Scores not done')+' · '+(qDone?'question answered'+(q.read&&q.read.primary?' ('+q.read.primary.brain+' '+q.read.primary.state+')':''):'question still to answer')) : (arvo?'Tap to start: a few scores, then one question':'Opens this arvo. Tap to open now.');
   var req=S.habits.filter(function(h){return h.req;}), dn=req.filter(function(h){return habitDone(h,k);}).length;
   $('#tkSum').textContent = dn+' of '+req.length+' done today'+(dn<req.length?' · tap to see what\'s left':'');
 }
