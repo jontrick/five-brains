@@ -320,7 +320,8 @@ table.tod th{color:var(--mut);font-weight:500}
       <button data-r="snack"><span>🍽 Meal / snack</span><b id="rc-snack">0</b><span class="small" id="rt-snack"></span></button>
       <button data-r="breath"><span>🫁 Breathing</span><b id="rc-breath">0</b><span class="small" id="rt-breath"></span></button>
     </div>
-    <p class="small muted" style="margin:8px 0 0">Breathing: 4 s in, 6 s out, four rounds. Long-press any button to undo.</p>
+    <div id="mealAsk"></div>
+    <p class="small muted" style="margin:8px 0 0">Meals come from your Phoenix ticks. Breathing: 4 s in, 6 s out, four rounds. Long-press walk or breathing to undo.</p>
   </div>
 
   <div class="card fold" data-fold="q" id="qCard">
@@ -500,7 +501,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.5.0';
+var APP_VERSION = '1.6.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -598,7 +599,8 @@ function blank(){
     weights:{},   // date -> kg (local weigh-ins)
     phoenix:{},   // date -> accountability_day row
     entries:[],   // {id,date,kind,transcript,analysis,created_at,updated_at,_dirty}
-    dirty:{days:{},water:{}},
+    dirty:{days:{},water:{},feed:{}},
+    feeds:{},       // date -> {feed_id: Phoenix feed_events row}
     lastSync:null, scale5:true
   };
 }
@@ -606,6 +608,7 @@ function load(){
   try{ var s = JSON.parse(localStorage.getItem(LS)); if(s && s.settings){ var b = blank(); var needScale5 = !s.scale5;
     for(var k in b) if(!(k in s)) s[k]=b[k];
     for(var k2 in b.settings) if(!(k2 in s.settings)) s.settings[k2]=b.settings[k2];
+    if(!s.dirty) s.dirty={days:{},water:{}}; if(!s.dirty.feed) s.dirty.feed={};
     if(needScale5){ // v1.4: move all check-in scales from 1–10 to 1–5
       var now=new Date().toISOString(), half=function(v){ return v==null||v===''?v:Math.max(1,Math.min(5,Math.round(+v/2))); };
       s.dirty=s.dirty||{days:{},water:{}};
@@ -650,7 +653,7 @@ function autoVal(h,k){
     case 'journal': return S.entries.some(function(e){return e.date===k && (e.kind==='feelings'||e.kind==='ideas') && !e._deleted;});
     case 'pulse': return pulsesOn(k).length >= (+S.settings.pulseT||3);
     case 'walk': return ((d.log&&d.log.walk)||[]).length >= (+S.settings.walkT||1);
-    case 'snack': return ((d.log&&d.log.snack)||[]).length >= (+S.settings.snackT||3);
+    case 'snack': return mealsOn(k).length >= (+S.settings.snackT||3);
     case 'breath': return ((d.log&&d.log.breath)||[]).length >= 1;
   }
   return false;
@@ -853,24 +856,64 @@ function logPulse(){
   PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; FOLD.pulse=true; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
 }
 function tsOf(x){ return typeof x==='string'?x:(x&&x.at); }
-function mealLabel(x){ return typeof x==='string' ? 'Snack' : ((x.kind||'Meal')+(x.loc?' @ '+x.loc:'')+(x.what?' ('+x.what+')':'')); }
+var LOCS=['Home','Office','Car','Café / out','Gym','Other'];
+// All meals for a day: Phoenix ticks (feed_events) + anything logged by hand here
+function mealsOn(k){
+  var out=[], F=S.feeds[k]||{};
+  Object.keys(F).forEach(function(id){ var r=F[id]; if(!r.eaten) return;
+    out.push({src:'phoenix', id:id, name:r.name||'Feed', at:r.eaten_at||null, loc:r.location||null, note:r.note||null, kcal:r.kcal, protein_g:r.protein_g, planned:r.planned_time}); });
+  var d=S.days[k]; ((d&&d.log&&d.log.snack)||[]).forEach(function(x,i){
+    out.push(typeof x==='string' ? {src:'manual', idx:i, name:'Snack', at:x, loc:null} : {src:'manual', idx:i, name:x.kind||'Meal', at:x.at, loc:x.loc||null, note:x.what||null}); });
+  return out.sort(function(a,b){ return (a.at||'9')<(b.at||'9')?-1:1; });
+}
+function mealLabel(m){ return (m.name||'Meal')+(m.loc?' @ '+m.loc:'')+(m.note?' ('+m.note+')':'')+(m.src==='phoenix'?' [Phoenix tick]':''); }
+function setMealLoc(k,m,loc,note){
+  if(m.src==='phoenix'){ var r=S.feeds[k][m.id]; r.location=loc; if(note!==undefined) r.note=note; r._local=new Date().toISOString(); S.dirty.feed[k+'|'+m.id]=1; save(); queueSync(); renderAll(); }
+  else { var x=rlog(k).snack[m.idx]; if(typeof x==='string') x=rlog(k).snack[m.idx]={at:x,kind:'Snack'}; x.loc=loc; if(note!==undefined) x.what=note; touchDay(k); renderAll(); }
+}
+function openMeals(){
+  var k=todayKey(), ms=mealsOn(k);
+  var h='<div class="row" style="margin-bottom:8px"><b>🍽 Today\'s meals</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
+  if(!ms.length) h+='<p class="small muted">Nothing yet. Tick meals in Phoenix and they\'ll appear here with the time you ticked them.</p>';
+  ms.forEach(function(m,i){
+    h+='<div class="card" style="margin:8px 0;padding:12px"><div class="row" style="margin-bottom:6px"><b>'+esc(m.name)+'</b><span class="small muted" style="text-align:right">'+(m.at?hhmm(m.at):'–')+(m.src==='phoenix'?' · from Phoenix':' · logged here')+'</span></div>'+
+      '<div class="chips pick" data-mi="'+i+'">'+LOCS.map(function(l){return '<span class="chip'+(m.loc===l?' on':'')+'">'+esc(l)+'</span>';}).join('')+'</div>'+
+      '<input data-mn="'+i+'" value="'+esc(m.note||'')+'" placeholder="Note (optional), e.g. ate at desk, rushed" style="margin-top:8px"></div>';
+  });
+  h+='<button class="btn sm" id="mManual" style="margin-top:6px">+ Add one that isn\'t in Phoenix</button>';
+  $('#sheetBody').innerHTML=h; SHEET_ID=null; $('#sheet').classList.add('on'); $('#shClose').onclick=function(){ closeSheet(); renderAll(); };
+  $$('#sheetBody [data-mi]').forEach(function(g){ var m=ms[+g.dataset.mi]; $$('.chip',g).forEach(function(c){ c.onclick=function(){ setMealLoc(k,m,c.textContent); $$('.chip',g).forEach(function(z){z.classList.toggle('on',z===c);}); }; }); });
+  $$('#sheetBody [data-mn]').forEach(function(inp){ inp.onchange=function(){ var m=ms[+inp.dataset.mn]; setMealLoc(k,m,m.loc,inp.value.trim()||null); }; });
+  $('#mManual').onclick=openMealManual;
+}
 var MEAL={kind:'Meal',loc:null};
-function openMeal(){
-  var kinds=['Meal','Snack'], locs=['Home','Office','Car','Café / out','Gym','Other'];
+function openMealManual(){
+  var kinds=['Meal','Snack'];
   function chips(list,key){ return '<div class="chips pick" data-mk="'+key+'">'+list.map(function(x){return '<span class="chip'+(MEAL[key]===x?' on':'')+'">'+esc(x)+'</span>';}).join('')+'</div>'; }
-  $('#sheetBody').innerHTML='<div class="row" style="margin-bottom:8px"><b>🍽 Log a meal or snack</b><button class="btn sm" style="flex:none" id="shClose">Cancel</button></div>'+
-    '<div class="lbl"><span>What was it?</span></div>'+chips(kinds,'kind')+'<div class="lbl"><span>Where?</span></div>'+chips(locs,'loc')+
-    '<div class="lbl"><span>What did you have? (optional)</span></div><input id="mWhat" placeholder="e.g. chicken & rice, protein yoghurt"><div class="sp"></div><button class="btn pri full" id="mLog">Log it</button>';
-  SHEET_ID=null; $('#sheet').classList.add('on'); $('#shClose').onclick=closeSheet;
+  $('#sheetBody').innerHTML='<div class="row" style="margin-bottom:8px"><b>🍽 Add a meal not in Phoenix</b><button class="btn sm" style="flex:none" id="shClose">Back</button></div>'+
+    '<div class="lbl"><span>What was it?</span></div>'+chips(kinds,'kind')+'<div class="lbl"><span>Where?</span></div>'+chips(LOCS,'loc')+
+    '<div class="lbl"><span>Note (optional)</span></div><input id="mWhat" placeholder="e.g. chicken & rice"><div class="sp"></div><button class="btn pri full" id="mLog">Log it</button>';
+  $('#shClose').onclick=openMeals;
   $$('#sheetBody [data-mk]').forEach(function(g){ $$('.chip',g).forEach(function(c){ c.onclick=function(){ MEAL[g.dataset.mk]=c.textContent; $$('.chip',g).forEach(function(z){z.classList.toggle('on',z===c);}); }; }); });
   $('#mLog').onclick=function(){ if(!MEAL.loc){ toast('Where did you have it?'); return; }
     rlog(todayKey()).snack.push({at:new Date().toISOString(), kind:MEAL.kind, loc:MEAL.loc, what:$('#mWhat').value.trim()||null});
-    touchDay(); closeSheet(); renderToday(); renderHeader(); toast(MEAL.kind+' logged · '+MEAL.loc); MEAL={kind:'Meal',loc:null}; };
+    touchDay(); MEAL={kind:'Meal',loc:null}; toast('Logged'); openMeals(); renderToday(); };
+}
+function renderMealAsk(){
+  var box=$('#mealAsk'); if(!box) return; var k=todayKey();
+  var m=mealsOn(k).filter(function(x){return x.src==='phoenix' && !x.loc;})[0];
+  if(!m){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="callout" style="margin:10px 0 0"><b>'+esc(m.name)+'</b> ticked in Phoenix'+(m.at?' at '+hhmm(m.at):'')+'. Where were you?<div class="chips pick" style="margin-top:8px">'+LOCS.map(function(l){return '<span class="chip">'+esc(l)+'</span>';}).join('')+'</div></div>';
+  $$('#mealAsk .chip').forEach(function(c){ c.onclick=function(){ setMealLoc(k,m,c.textContent); toast(m.name+' · '+c.textContent); }; });
 }
 function renderRecovery(){
-  var L=rlog(todayKey()), t={walk:+S.settings.walkT||1,snack:+S.settings.snackT||3,breath:1}, met=0;
-  ['walk','snack','breath'].forEach(function(x){ var n=L[x].length; $('#rc-'+x).textContent=n; $('#rt-'+x).textContent=n?(x==='snack'&&typeof L[x][n-1]!=='string'?(L[x][n-1].loc||'')+' '+hhmm(tsOf(L[x][n-1])):'last '+hhmm(tsOf(L[x][n-1]))):'target '+t[x]; $('[data-r='+x+']').classList.toggle('met',n>=t[x]); if(n>=t[x]) met++; });
+  var k=todayKey(), L=rlog(k), t={walk:+S.settings.walkT||1,snack:+S.settings.snackT||3,breath:1}, met=0;
+  ['walk','breath'].forEach(function(x){ var n=L[x].length; $('#rc-'+x).textContent=n; $('#rt-'+x).textContent=n?'last '+hhmm(L[x][n-1]):'target '+t[x]; $('[data-r='+x+']').classList.toggle('met',n>=t[x]); if(n>=t[x]) met++; });
+  var ms=mealsOn(k), lm=ms[ms.length-1], noloc=ms.filter(function(m){return !m.loc;}).length;
+  $('#rc-snack').textContent=ms.length; $('#rt-snack').textContent= noloc ? noloc+' need a place' : (lm ? (lm.loc||'')+' '+(lm.at?hhmm(lm.at):'') : 'tick in Phoenix');
+  $('[data-r=snack]').classList.toggle('met',ms.length>=t.snack); if(ms.length>=t.snack) met++;
   $('#rcTag').textContent=met+'/3'; $('#rcTag').className='tag'+(met===3?' ok':'');
+  renderMealAsk();
 }
 function addRecovery(x){ rlog(todayKey())[x].push(new Date().toISOString()); touchDay(); renderToday(); renderHeader(); }
 var BR={on:false,t:null,iv:null};
@@ -932,7 +975,7 @@ function bindToday(){
   $$('[data-r]').forEach(function(b){ var x=b.dataset.r, lp=null, fired=false;
     b.addEventListener('touchstart',function(){ fired=false; lp=setTimeout(function(){ fired=true; var L=rlog(todayKey())[x]; if(L.length) ask('Remove the last '+x+'?','Remove').then(function(ok){ if(ok){ L.pop(); touchDay(); renderToday(); } }); },600); },{passive:true});
     b.addEventListener('touchend',function(){ clearTimeout(lp); });
-    b.onclick=function(){ if(fired){fired=false;return;} if(x==='breath') startBreathing(); else if(x==='snack') openMeal(); else { addRecovery(x); toast('Walk logged. Get the horizon in view.'); } }; });
+    b.onclick=function(){ if(fired){fired=false;return;} if(x==='breath') startBreathing(); else if(x==='snack') openMeals(); else { addRecovery(x); toast('Walk logged. Get the horizon in view.'); } }; });
   $('#bStop').onclick=function(){ BR.on=false; clearTimeout(BR.t); clearInterval(BR.iv); $('#breathe').classList.remove('on'); };
   $('#amDone').onclick=function(){ var k=todayKey(); rlog(k).amDone=true; touchDay(k); FOLD.am=true; renderToday(); renderHeader(); toast('Morning logged. Have a good one.'); };
   $('#amThoughts').addEventListener('input',function(){ var L=rlog(); L.am_thoughts=this.value; if(!L.times.am_thoughts) L.times.am_thoughts=new Date().toISOString(); touchDay(); });
@@ -1010,7 +1053,7 @@ function ctxFor(k){
   return { date:k, weekday: niceDate(k).split(' ')[0], scales:'all check-in scores are 1-5 (energy/mood/focus/sleep quality: 5 = best; stress and revs: 5 = maxed)',
     full_day: isPerfect(k), missed_items: reqMissed(k), miss_reason: L.miss||null, week_miss_reflection: L.missWeek||null,
     energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:a.context||null, preceded_by:e.transcript||null}; }),
-    recovery: { walks:(L.walk||[]).map(hhmm), meals_and_snacks:(L.snack||[]).map(function(x){ return hhmm(tsOf(x))+' '+mealLabel(x); }), breathing:(L.breath||[]).map(hhmm) },
+    recovery: { walks:(L.walk||[]).map(hhmm), meals_and_snacks:mealsOn(k).map(function(m){ return (m.at?hhmm(m.at):'?')+' '+mealLabel(m); }), breathing:(L.breath||[]).map(hhmm) },
     morning_thoughts: L.am_thoughts||null,
     checkin_times: Object.keys(L.times||{}).reduce(function(o,x){ o[x]=hhmm(L.times[x]); return o; },{}),
     goalposts_moved: d.goal_moved==null?null:d.goal_moved, hit_original_target: d.hit_target==null?null:d.hit_target,
@@ -1282,7 +1325,7 @@ function reportStats(){
     afterRec:avgOf(after), afterRecN:after.filter(Boolean).length, noRec:avgOf(other), noRecN:other.filter(Boolean).length,
     stakeE:avgOf(stake), stakeN:stake.length, nonStakeE:avgOf(nonStake),
     goalMoved:gm.length?Math.round(gm.filter(Boolean).length/gm.length*100):null, goalN:gm.length, hitTarget:ht.length?Math.round(ht.filter(Boolean).length/ht.length*100):null,
-    walks:L('walk'), snacks:L('snack'), breaths:L('breath'), walkBlocks:walkTimes,
+    walks:L('walk'), snacks:ks.reduce(function(a,k){ return a+mealsOn(k).length; },0), breaths:L('breath'), walkBlocks:walkTimes,
     waterDays:ks.filter(function(k){return waterMl(k)>=(+S.settings.water||3000);}).length,
     feelings:S.entries.filter(function(e){return e.kind==='feelings'&&!e._deleted&&e.date>=from&&e.date<=to;}).length,
     ideas:S.entries.filter(function(e){return e.kind==='ideas'&&!e._deleted&&e.date>=from&&e.date<=to;}).length,
@@ -1456,6 +1499,10 @@ async function pushDirty(){
     var a=await SB.from('brains_day').upsert(rows,{onConflict:'user_id,date'});
     if(!a.error) dk.forEach(function(k){ delete S.dirty.days[k]; }); else console.warn('brains_day',a.error);
   }
+  var fk=Object.keys(S.dirty.feed||{});
+  for(var fi=0;fi<fk.length;fi++){ var parts=fk[fi].split('|'), fr=(S.feeds[parts[0]]||{})[parts[1]]; if(!fr){ delete S.dirty.feed[fk[fi]]; continue; }
+    var fu=await SB.from('feed_events').update({location:fr.location||null, note:fr.note||null}).eq('user_id',uid).eq('date',parts[0]).eq('feed_id',parts[1]);
+    if(!fu.error) delete S.dirty.feed[fk[fi]]; else console.warn('feed_events',fu.error); }
   var wk=Object.keys(S.dirty.water);
   if(wk.length){
     var wr=wk.map(function(k){ var w=S.water[k]||{ml:0}; return {user_id:uid,date:k,water_ml:+w.ml||0,target_ml:+S.settings.water||3000,source:w.source||'five-brains',updated_at:w.updated_at||new Date().toISOString()}; });
@@ -1482,8 +1529,13 @@ async function fullSync(loud){
       SB.from('accountability_day').select('*').gte('date',since).order('date',{ascending:false}),
       SB.from('brains_day').select('*').gte('date',since),
       SB.from('daily_water').select('*').gte('date',since),
-      SB.from('brains_entry').select('*').order('created_at',{ascending:false}).limit(300)
+      SB.from('brains_entry').select('*').order('created_at',{ascending:false}).limit(300),
+      SB.from('feed_events').select('*').gte('date',addDays(todayKey(),-60))
     ]);
+    if(res[4].data){ res[4].data.forEach(function(r){ var D=S.feeds[r.date]||(S.feeds[r.date]={}), l=D[r.feed_id];
+      if(l && S.dirty.feed[r.date+'|'+r.feed_id]){ r.location=l.location; r.note=l.note; }
+      D[r.feed_id]=r; }); }
+    else if(res[4].error) console.warn('feed_events (run the 2026-11-23 SQL)',res[4].error);
     if(res[0].data){ res[0].data.forEach(function(r){ S.phoenix[r.date]=r; }); }
     else if(res[0].error) console.warn('accountability_day',res[0].error);
     if(res[1].data) res[1].data.forEach(function(r){ var l=S.days[r.date]; if(!l || !l.updated_at || (r.updated_at && r.updated_at>l.updated_at && !S.dirty.days[r.date])){ var d={checks:r.checks||{}}; DAY_COLS.forEach(function(c){ if(c!=='checks') d[c]=r[c]; }); S.days[r.date]=d; } });
