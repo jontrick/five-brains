@@ -203,6 +203,13 @@ table.tod th{color:var(--mut);font-weight:500}
 .wprog i{display:block;height:100%;background:var(--ok);transition:width 1s linear}
 .wrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
 .wrow .x{margin-left:auto}
+.ic{width:19px;height:19px;flex:none;fill:none;stroke:var(--acc);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-4px}
+.ic.big{width:28px;height:28px;stroke-width:1.6}
+.ic.sm{width:15px;height:15px;vertical-align:-2px}
+.ic.mut{stroke:currentColor}
+.card h2 .ic{margin-right:2px}
+.jbtns .btn .ic{margin-bottom:2px}
+.rcv button>span:first-child{display:flex;align-items:center;gap:5px}
 .banner{background:#2b2316;border:1px solid #5a4522;color:var(--warm);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:8px}
 
 /* report */
@@ -253,10 +260,10 @@ table.tod th{color:var(--mut);font-weight:500}
 <section class="view on" id="v-today">
 
   <div class="card jtop">
-    <h2>🎙 Log something <span class="small muted" style="margin-left:auto;font-weight:500">talk or type</span></h2>
+    <h2><i data-ic="mic"></i> Log something <span class="small muted" style="margin-left:auto;font-weight:500">talk or type</span></h2>
     <div class="jbtns">
-      <button class="btn" data-rec="feelings"><span>🫀</span>Feelings</button>
-      <button class="btn" data-rec="ideas"><span>💡</span>Ideas</button>
+      <button class="btn" data-rec="feelings"><i data-ic="heart" class="big"></i>Feelings</button>
+      <button class="btn" data-rec="ideas"><i data-ic="bulb" class="big"></i>Ideas</button>
     </div>
     <div id="todayEntries" style="margin-top:10px"></div>
   </div>
@@ -264,7 +271,7 @@ table.tod th{color:var(--mut);font-weight:500}
   <div id="missBox"></div>
 
   <div class="card fold" data-fold="am">
-    <h2>🌅 Morning check-in <span class="tag" id="amTag"></span></h2>
+    <h2><i data-ic="sunrise"></i> Morning check-in <span class="tag" id="amTag"></span></h2>
     <div class="fold-sum" id="amSum"></div>
     <div class="fold-body">
     <div class="lbl"><span>Sleep hours</span><b id="slpV">–</b></div>
@@ -277,7 +284,7 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="scale p" data-k="sleep_quality"></div>
     <div class="lbl"><span>Energy (morning)</span><b data-show="energy_am">–</b></div>
     <div class="scale" data-k="energy_am"></div>
-    <div class="lbl"><span>Morning thoughts</span><button class="btn sm dict" data-dict="amThoughts">🎙 Talk</button></div>
+    <div class="lbl"><span>Morning thoughts</span><button class="btn sm dict" data-dict="amThoughts">Talk</button></div>
     <textarea id="amThoughts" rows="3" placeholder="What's on your mind this morning? Talk or type."></textarea>
     <div class="lbl"><span>The one thing that makes today a success</span></div>
     <input data-t="intention" placeholder="e.g. Ship the costing sheet before lunch">
@@ -287,7 +294,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 
   <div class="card" id="phCard">
-    <h2>🔥 Phoenix <span class="tag" id="phStatus">offline</span></h2>
+    <h2><i data-ic="flame"></i> Phoenix <span class="tag" id="phStatus">offline</span></h2>
     <div class="ph-grid" id="phGrid"></div>
     <div class="row" id="wRow" style="margin-top:10px">
       <input id="wIn" type="number" inputmode="decimal" step="0.1" placeholder="Weigh-in kg → Phoenix">
@@ -296,7 +303,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 
   <div class="card">
-    <h2>💧 Water <span class="tag" id="wtTag"></span></h2>
+    <h2><i data-ic="drop"></i> Water <span class="tag" id="wtTag"></span></h2>
     <div class="bottles" id="bottles"></div>
     <div class="lbl" style="margin:0 0 8px"><span id="wtTxt"></span><span class="small" id="wtSrc"></span></div>
     <div class="row">
@@ -307,7 +314,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 
   <div class="card fold" data-fold="pulse">
-    <h2>⚡ Energy pulse <span class="tag" id="plTag"></span></h2>
+    <h2><i data-ic="zap"></i> Energy pulse <span class="tag" id="plTag"></span></h2>
     <div class="fold-sum"><button class="btn pri full" id="pOpen">＋ Log a pulse</button></div>
     <div class="fold-body">
     <div class="lbl"><span>Energy in the tank</span><b id="pE">–</b></div>
@@ -325,24 +332,24 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 
   <div class="card">
-    <h2>🔋 Active recovery <span class="tag" id="rcTag"></span></h2>
+    <h2><i data-ic="battery"></i> Active recovery <span class="tag" id="rcTag"></span></h2>
     <div class="rcv">
-      <button data-r="walk"><span>🚶 7-min walk</span><b id="rc-walk">0</b><span class="small" id="rt-walk"></span></button>
-      <button data-r="snack"><span>🍽 Meal / snack</span><b id="rc-snack">0</b><span class="small" id="rt-snack"></span></button>
-      <button data-r="breath"><span>🫁 Breathing</span><b id="rc-breath">0</b><span class="small" id="rt-breath"></span></button>
+      <button data-r="walk"><span><i data-ic="walk" class="sm"></i> 7-min walk</span><b id="rc-walk">0</b><span class="small" id="rt-walk"></span></button>
+      <button data-r="snack"><span><i data-ic="utensils" class="sm"></i> Meal / snack</span><b id="rc-snack">0</b><span class="small" id="rt-snack"></span></button>
+      <button data-r="breath"><span><i data-ic="wind" class="sm"></i> Breathing</span><b id="rc-breath">0</b><span class="small" id="rt-breath"></span></button>
     </div>
     <div id="mealAsk"></div>
     <p class="small muted" style="margin:8px 0 0">Tap a tile to log or edit it. Walk opens a timer with GPS; meals come from your Phoenix ticks.</p>
   </div>
 
   <div class="card fold" data-fold="q" id="qCard">
-    <h2>🧭 Evening question <span class="tag" id="qTag"></span></h2>
+    <h2><i data-ic="compass"></i> Evening question <span class="tag" id="qTag"></span></h2>
     <div class="fold-sum" id="qSum"></div>
     <div class="fold-body"><div id="qBody"></div></div>
   </div>
 
   <div class="card fold" data-fold="pm">
-    <h2>🌙 Evening check-in <span class="tag" id="pmTag"></span></h2>
+    <h2><i data-ic="moon"></i> Evening check-in <span class="tag" id="pmTag"></span></h2>
     <div class="fold-sum" id="pmSum"></div>
     <div class="fold-body">
     <div class="lbl"><span>Energy (evening)</span><b data-show="energy_pm">–</b></div>
@@ -365,7 +372,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 
   <div class="card fold" data-fold="ticks">
-    <h2>✅ Daily ticks <span class="tag" id="tkTag"></span></h2>
+    <h2><i data-ic="checks"></i> Daily ticks <span class="tag" id="tkTag"></span></h2>
     <div class="fold-sum" id="tkSum"></div>
     <div class="fold-body"><div class="habits" id="habits"></div></div>
   </div>
@@ -374,16 +381,16 @@ table.tod th{color:var(--mut);font-weight:500}
 <!-- ═════════ JOURNAL ═════════ -->
 <section class="view" id="v-journal">
   <div class="jbtns" style="margin-top:4px">
-    <button class="btn" data-rec="feelings"><span>🫀</span>Feelings</button>
-    <button class="btn" data-rec="ideas"><span>💡</span>Ideas</button>
+    <button class="btn" data-rec="feelings"><i data-ic="heart" class="big"></i>Feelings</button>
+    <button class="btn" data-rec="ideas"><i data-ic="bulb" class="big"></i>Ideas</button>
   </div>
   <div class="card">
-    <h2>📄 Report for Dave</h2>
+    <h2><i data-ic="file"></i> Report for Dave</h2>
     <p class="muted small" style="margin:0 0 10px">A PDF of everything since Day 1: how the app works, your results against David's two focus points, energy by time of day and a draft optimal day.</p>
     <button class="btn pri full" data-report>Open report</button>
   </div>
   <div class="card">
-    <h2>🧭 Weekly review</h2>
+    <h2><i data-ic="compass"></i> Weekly review</h2>
     <p class="muted small" style="margin:0 0 10px">Reads the last 7 days of check-ins, journal entries and Phoenix data, then looks for patterns.</p>
     <button class="btn vio full" id="weeklyBtn">Run weekly review</button>
   </div>
@@ -396,34 +403,34 @@ table.tod th{color:var(--mut);font-weight:500}
 <!-- ═════════ TRENDS ═════════ -->
 <section class="view" id="v-trends">
   <div class="card">
-    <h2>📅 Consistency <span class="tag" id="chTag"></span></h2>
+    <h2><i data-ic="calendar"></i> Consistency <span class="tag" id="chTag"></span></h2>
     <div class="cal" id="cal"></div>
     <div class="legend"><span><i style="background:var(--ok)"></i>All done</span><span><i style="background:#6b5524"></i>Partial</span><span><i style="background:#5a332d"></i>Missed</span></div>
   </div>
-  <div class="card"><h2>🧩 Why days get missed <span class="tag">30 days</span></h2><div id="missWhy"></div></div>
-  <div class="card"><h2>🕐 Your day, by the clock <span class="tag" id="todTag">30 days</span></h2><div id="todBox"></div></div>
-  <div class="card"><h2>🔌 Drains vs chargers <span class="tag">avg energy</span></h2><div id="dcBox"></div></div>
-  <div class="card"><h2>🧠 5Brains <span class="tag">read from your answers · 30d</span></h2><div id="brainTrend"></div></div>
-  <div class="card"><h2>⚡ Energy & mood <span class="tag">14 days</span></h2><svg class="chart" id="cEnergy"></svg>
+  <div class="card"><h2><i data-ic="alert"></i> Why days get missed <span class="tag">30 days</span></h2><div id="missWhy"></div></div>
+  <div class="card"><h2><i data-ic="clock"></i> Your day, by the clock <span class="tag" id="todTag">30 days</span></h2><div id="todBox"></div></div>
+  <div class="card"><h2><i data-ic="swap"></i> Drains vs chargers <span class="tag">avg energy</span></h2><div id="dcBox"></div></div>
+  <div class="card"><h2><i data-ic="brain"></i> 5Brains <span class="tag">read from your answers · 30d</span></h2><div id="brainTrend"></div></div>
+  <div class="card"><h2><i data-ic="pulse"></i> Energy & mood <span class="tag">14 days</span></h2><svg class="chart" id="cEnergy"></svg>
     <div class="legend"><span><i style="background:var(--acc)"></i>Energy AM</span><span><i style="background:#5fa8e6"></i>Energy PM</span><span><i style="background:var(--acc2)"></i>Mood</span><span><i style="background:var(--warm)"></i>Stress</span></div></div>
-  <div class="card"><h2>😴 Sleep <span class="tag">14 days</span></h2><svg class="chart" id="cSleep"></svg>
+  <div class="card"><h2><i data-ic="bed"></i> Sleep <span class="tag">14 days</span></h2><svg class="chart" id="cSleep"></svg>
     <div class="legend"><span><i style="background:var(--acc2)"></i>Hours</span><span id="slpQAvg"></span></div></div>
-  <div class="card"><h2>⚖️ Bodyweight <span class="tag">30 days</span></h2><svg class="chart" id="cWeight"></svg><div class="small muted" id="wSummary"></div></div>
-  <div class="card"><h2>📊 Habit hit-rate <span class="tag">14 days</span></h2><div id="hitRate"></div></div>
+  <div class="card"><h2><i data-ic="scale"></i> Bodyweight <span class="tag">30 days</span></h2><svg class="chart" id="cWeight"></svg><div class="small muted" id="wSummary"></div></div>
+  <div class="card"><h2><i data-ic="bars"></i> Habit hit-rate <span class="tag">14 days</span></h2><div id="hitRate"></div></div>
 </section>
 
 <!-- ═════════ SETTINGS ═════════ -->
 <section class="view" id="v-settings">
   <div class="card">
-    <h2>🔑 Phoenix account</h2>
+    <h2><i data-ic="key"></i> Phoenix account</h2>
     <div id="authBox"></div>
   </div>
   <div class="card">
-    <h2>🎨 Skin <span class="tag">same as Phoenix</span></h2>
+    <h2><i data-ic="palette"></i> Skin <span class="tag">same as Phoenix</span></h2>
     <div class="skin-grid" id="skinGrid"></div>
   </div>
   <div class="card">
-    <h2>🎯 Habits & targets</h2>
+    <h2><i data-ic="target"></i> Habits & targets</h2>
     <div class="row">
       <div><div class="lbl"><span>Tracking since</span></div><input type="date" id="sStart"></div>
       <div><div class="lbl"><span>Water target (ml)</span></div><input type="number" id="sWater" inputmode="numeric" step="750"></div>
@@ -437,18 +444,18 @@ table.tod th{color:var(--mut);font-weight:500}
     <input type="number" id="sKcal" inputmode="numeric" step="50">
   </div>
   <div class="card">
-    <h2>✅ Daily ticks</h2>
+    <h2><i data-ic="checks"></i> Daily ticks</h2>
     <p class="small muted" style="margin:0 0 10px">Req = counts toward a perfect day. Auto-tick sources fill themselves from Phoenix or the app. You can still tick any item by hand.</p>
     <div id="habEdit"></div>
     <button class="btn sm" id="habAdd">+ Add tick</button>
   </div>
   <div class="card">
-    <h2>🎨 5Brains labels</h2>
+    <h2><i data-ic="tag"></i> 5Brains labels</h2>
     <p class="small muted" style="margin:0 0 8px">Rename or reword to match your EPP assessment.</p>
     <div id="brainEdit"></div>
   </div>
   <div class="card">
-    <h2>🧠 Reflection engine</h2>
+    <h2><i data-ic="brain"></i> Reflection engine</h2>
     <div class="lbl"><span>Endpoint (Anthropic Messages-compatible proxy)</span></div>
     <input id="sAiUrl" placeholder="https://…">
     <div class="lbl"><span>Model</span></div>
@@ -459,12 +466,12 @@ table.tod th{color:var(--mut);font-weight:500}
     <button class="btn sm" id="aiTest">Test connection</button> <span class="small muted" id="aiTestOut"></span>
   </div>
   <div class="card">
-    <h2>📄 Report</h2>
+    <h2><i data-ic="file"></i> Report</h2>
     <div class="lbl"><span>Next session with Dave</span></div><input type="date" id="sReport">
     <div class="sp"></div><button class="btn sm" data-report>Open report</button>
   </div>
   <div class="card">
-    <h2>💾 Data</h2>
+    <h2><i data-ic="db"></i> Data</h2>
     <div class="row">
       <button class="btn sm" id="expBtn">Export JSON</button>
       <label class="btn sm" style="text-align:center">Import<input type="file" id="impIn" accept="application/json" hidden></label>
@@ -479,10 +486,10 @@ table.tod th{color:var(--mut);font-weight:500}
 <div class="rec" id="rec">
   <div class="row" style="margin-bottom:10px">
     <button class="btn sm" style="flex:none" id="recClose">✕</button>
-    <div class="seg" id="recSeg"><button data-m="feelings">🫀 Feelings</button><button data-m="ideas">💡 Ideas</button></div>
+    <div class="seg" id="recSeg"><button data-m="feelings"><i data-ic="heart" class="sm mut"></i> Feelings</button><button data-m="ideas"><i data-ic="bulb" class="sm mut"></i> Ideas</button></div>
   </div>
   <div class="hint" id="recPrompt"></div>
-  <textarea id="recTx" placeholder="Tap the mic and talk — or type, or use the 🎤 on your keyboard."></textarea>
+  <textarea id="recTx" placeholder="Tap the mic and talk, or type, or use your keyboard's mic."></textarea>
   <button class="mic" id="micBtn" aria-label="Record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
   <div class="hint" id="recHint"></div>
   <div class="row" style="margin-top:10px">
@@ -491,7 +498,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 </div>
 
-<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI">✨ Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button></div><div class="rp" id="rp"></div></div>
+<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI"><i data-ic="sparkle" class="sm mut"></i> Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button></div><div class="rp" id="rp"></div></div>
 <div class="breathe" id="breathe"><div class="bt" id="bTxt">Get comfortable</div>
 <div class="bwrap"><svg class="bring" viewBox="0 0 240 240"><circle class="trk" cx="120" cy="120" r="110"/><circle class="arc" id="bArc" cx="120" cy="120" r="110"/></svg><div class="orb" id="orb"></div><div class="bsec" id="bSec"></div></div>
 <div id="bCnt" style="font-size:14px;opacity:.8">4 in · 6 out · 4 rounds</div>
@@ -523,7 +530,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.7.0';
+var APP_VERSION = '1.8.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -578,6 +585,9 @@ function applySkin(id){
   r.setProperty('--on-acc', v[10]?'#ffffff':'#0d1117');
   var m=document.querySelector('meta[name=theme-color]'); if(m) m.setAttribute('content', v[1]);
 }
+var ICN={"mic": "<rect x=\"9\" y=\"3\" width=\"6\" height=\"11\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3\"/>", "heart": "<path d=\"M19.5 12.6 12 20l-7.5-7.4A5 5 0 1 1 12 6a5 5 0 1 1 7.5 6.6z\"/>", "bulb": "<path d=\"M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z\"/>", "sunrise": "<path d=\"M12 3v4M5.6 7.6 7 9M18.4 7.6 17 9M3 16h2M19 16h2M7 16a5 5 0 0 1 10 0M2 20h20\"/>", "flame": "<path d=\"M12 3c.8 3 4.5 5 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.1-3.6 2.2-4.5.1 1.7.9 2.8 2 3.1C11 8.5 11 5.5 12 3z\"/>", "drop": "<path d=\"M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z\"/>", "zap": "<path d=\"M13 2 4 14h7l-1 8 9-12h-7z\"/>", "battery": "<rect x=\"2\" y=\"7\" width=\"17\" height=\"10\" rx=\"2\"/><path d=\"M22 11v2M6 10.5v3M10 10.5v3\"/>", "walk": "<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"M9 21l2.2-6L9 12l1.5-4.5L15 11l3 1M8.5 12.5 6 14M13.5 16 15 21\"/>", "utensils": "<path d=\"M5 3v7a2.5 2.5 0 0 0 5 0V3M7.5 3v18M17 21V3c-2 1.5-3 4-3 7.5h3\"/>", "wind": "<path d=\"M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5M3 16h8\"/>", "compass": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m15.5 8.5-2 5-5 2 2-5z\"/>", "moon": "<path d=\"M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z\"/>", "checks": "<path d=\"M9 11l3 3 8-8\"/><path d=\"M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9\"/>", "file": "<path d=\"M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\"/><path d=\"M14 3v6h6M8 13h8M8 17h5\"/>", "calendar": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M3 10h18M8 3v4M16 3v4\"/>", "alert": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7.5v5.5M12 16.5h.01\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>", "swap": "<path d=\"M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4\"/>", "brain": "<path d=\"M9.5 4A2.5 2.5 0 0 0 7 6.5 3 3 0 0 0 4.5 11a3 3 0 0 0 1 5A3 3 0 0 0 9.5 20V4zM14.5 4A2.5 2.5 0 0 1 17 6.5a3 3 0 0 1 2.5 4.5 3 3 0 0 1-1 5 3 3 0 0 1-4 4V4z\"/>", "pulse": "<path d=\"M3 12h4l3-7 4 14 3-7h4\"/>", "bed": "<path d=\"M3 19V7M3 15h18v4M21 15v-2.5A2.5 2.5 0 0 0 18.5 10H11v5\"/><circle cx=\"7\" cy=\"12\" r=\"1.8\"/>", "scale": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M8 10a5.5 5.5 0 0 1 8 0l-3 3\"/>", "bars": "<path d=\"M5 20v-8M11 20V5M17 20v-5M3 20h18\"/>", "key": "<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"m11 12 9-9M16.5 6.5l2.5 2.5M14 9l2 2\"/>", "palette": "<path d=\"M12 3a9 9 0 0 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.3-.8-2.1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8z\"/><circle cx=\"7.5\" cy=\"11\" r=\".8\"/><circle cx=\"10\" cy=\"7\" r=\".8\"/><circle cx=\"14.5\" cy=\"7\" r=\".8\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/>", "db": "<ellipse cx=\"12\" cy=\"5.5\" rx=\"8\" ry=\"2.5\"/><path d=\"M4 5.5v13c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-13M4 12c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5\"/>", "sparkle": "<path d=\"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z\"/>", "tag": "<path d=\"M3 12V4h8l10 10-8 8z\"/><circle cx=\"7.5\" cy=\"8\" r=\"1.3\"/>"};
+function ic(n,c){ return '<svg class="ic'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICN[n]||'')+'</svg>'; }
+function hydrateIcons(root){ $$('[data-ic]',root).forEach(function(e){ e.outerHTML=ic(e.dataset.ic, e.className); }); }
 var DEFAULT_BRAINS = [
   {id:'red',    name:'Red',    color:'#e07a6e', job:'Threat & safety',        q:'Am I safe and settled — or on guard?'},
   {id:'orange', name:'Orange', color:'#e89a5a', job:'Belonging & trust',      q:'Do I feel connected? Do I trust the people around me?'},
@@ -723,7 +733,7 @@ function renderMiss(){
   var box=$('#missBox'); if(!box) return; var k=pendingMiss(), h='';
   if(k){
     var missed=reqMissed(k);
-    h+='<div class="card miss"><h2>🧩 '+esc(niceDate(k))+' wasn\'t a full day</h2><p class="small muted" style="margin:0 0 8px">Missed: '+esc(missed.join(', ')||'–')+'</p>'+
+    h+='<div class="card miss"><h2>'+ic('alert')+' '+esc(niceDate(k))+' wasn\'t a full day</h2><p class="small muted" style="margin:0 0 8px">Missed: '+esc(missed.join(', ')||'–')+'</p>'+
       '<div class="lbl" style="margin-top:0"><span>What got in the way?</span></div><div class="chips pick" id="mChips">'+MISS_REASONS.map(function(r){return '<span class="chip'+(MISS_SEL.indexOf(r)>=0?' on':'')+'">'+esc(r)+'</span>';}).join('')+'</div>'+
       '<input id="mNote" placeholder="Anything else? (optional)" style="margin-top:8px">'+
       '<div class="row" style="margin-top:8px"><button class="btn sm" style="flex:none" id="mFix">I did some, fix ticks</button><button class="btn pri" id="mSave">Save</button></div></div>';
@@ -731,8 +741,8 @@ function renderMiss(){
   var t=todayKey(), L=(S.days[t]&&S.days[t].log)||{}, wm=weekMisses();
   if(isSunday() && wm.length && !(L.missWeek&&L.missWeek.answer)){
     var tally={}; wm.forEach(function(m){ ((m.miss&&m.miss.reasons)||['(no reason logged)']).forEach(function(r){ tally[r]=(tally[r]||0)+1; }); });
-    h+='<div class="card"><h2>🧭 Week check: '+wm.length+' missed day'+(wm.length>1?'s':'')+'</h2><div class="chips" style="margin-bottom:8px">'+Object.keys(tally).map(function(r){return '<span class="chip">'+esc(r)+' ×'+tally[r]+'</span>';}).join('')+'</div>'+
-      '<p class="qtext" style="font-size:16px">Looking at these, what\'s the real common thread, and what would stop it next week?</p><textarea id="wkAns" rows="3" placeholder="Type, or use the 🎤 on your keyboard"></textarea><div class="sp"></div><button class="btn pri full" id="wkSave">Save</button></div>';
+    h+='<div class="card"><h2>'+ic('compass')+' Week check: '+wm.length+' missed day'+(wm.length>1?'s':'')+'</h2><div class="chips" style="margin-bottom:8px">'+Object.keys(tally).map(function(r){return '<span class="chip">'+esc(r)+' ×'+tally[r]+'</span>';}).join('')+'</div>'+
+      '<p class="qtext" style="font-size:16px">Looking at these, what\'s the real common thread, and what would stop it next week?</p><textarea id="wkAns" rows="3" placeholder="Type, or use your keyboard\'s mic"></textarea><div class="sp"></div><button class="btn pri full" id="wkSave">Save</button></div>';
   }
   box.innerHTML=h;
   if(k){
@@ -828,7 +838,7 @@ function renderQuestion(){
   var k=todayKey(), d=day(k), q=qFor(k), done=!!(d.log&&d.log.q&&d.log.q.answer), box=$('#qBody');
   setTag('#qTag', done);
   if(!done){
-    box.innerHTML='<p class="qtext">'+esc(q.text)+'</p><textarea id="qAns" rows="3" placeholder="Type, or use the 🎤 on your keyboard"></textarea>'+
+    box.innerHTML='<p class="qtext">'+esc(q.text)+'</p><textarea id="qAns" rows="3" placeholder="Type, or use your keyboard\'s mic"></textarea>'+
       '<div class="row" style="margin-top:8px"><button class="btn sm" style="flex:none" id="qSkip">Different question</button><button class="btn pri" id="qSave">Save</button></div>';
     var dr=sessionStorage.getItem('fb_qdraft_'+k); if(dr) $('#qAns').value=dr;
     $('#qAns').oninput=function(){ sessionStorage.setItem('fb_qdraft_'+k,this.value); };
@@ -869,7 +879,7 @@ function renderPulse(){
   var c=$('#pCtx'); if(!c.children.length){ CONTEXTS.forEach(function(t){ var b=document.createElement('button'); b.textContent=t; b.onclick=function(){ PUL.ctx=PUL.ctx===t?null:t; renderPulse(); }; c.appendChild(b); }); }
   $$('button',c).forEach(function(b){ b.classList.toggle('on',b.textContent===PUL.ctx); });
   var ps=pulsesOn(todayKey()); $('#plTag').textContent=ps.length+'/'+(+S.settings.pulseT||3); $('#plTag').className='tag'+(ps.length>=(+S.settings.pulseT||3)?' ok':'');
-  $('#pList').innerHTML=ps.slice().reverse().map(function(e){ var a=e.analysis||{}; return '<div class="pl"><span class="tm">'+hhmm(e.created_at)+'</span><span class="e">⚡'+(a.energy||'–')+(a.revs?' <span style="color:var(--warm)">↑'+a.revs+'</span>':'')+'</span><span class="n">'+esc([a.context,e.transcript].filter(Boolean).join(' · '))+'</span></div>'; }).join('');
+  $('#pList').innerHTML=ps.slice().reverse().map(function(e){ var a=e.analysis||{}; return '<div class="pl"><span class="tm">'+hhmm(e.created_at)+'</span><span class="e">'+ic('zap','sm')+(a.energy||'–')+(a.revs?' <span style="color:var(--warm)">↑'+a.revs+'</span>':'')+'</span><span class="n">'+esc([a.context,e.transcript].filter(Boolean).join(' · '))+'</span></div>'; }).join('');
 }
 function logPulse(){
   if(!PUL.e){ toast('Tap an energy score first'); return; }
@@ -895,7 +905,7 @@ function setMealLoc(k,m,loc,note){
 }
 function openMeals(){
   var k=todayKey(), ms=mealsOn(k);
-  var h='<div class="row" style="margin-bottom:8px"><b>🍽 Today\'s meals</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
+  var h='<div class="row" style="margin-bottom:8px"><b>'+ic('utensils')+' Today\'s meals</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
   if(!ms.length) h+='<p class="small muted">Nothing yet. Tick meals in Phoenix and they\'ll appear here with the time you ticked them.</p>';
   ms.forEach(function(m,i){
     h+='<div class="card" style="margin:8px 0;padding:12px"><div class="row" style="margin-bottom:6px"><b>'+esc(m.name)+'</b><span class="small muted" style="text-align:right">'+(m.at?hhmm(m.at):'–')+(m.src==='phoenix'?' · from Phoenix':' · logged here')+'</span></div>'+
@@ -912,7 +922,7 @@ var MEAL={kind:'Meal',loc:null};
 function openMealManual(){
   var kinds=['Meal','Snack'];
   function chips(list,key){ return '<div class="chips pick" data-mk="'+key+'">'+list.map(function(x){return '<span class="chip'+(MEAL[key]===x?' on':'')+'">'+esc(x)+'</span>';}).join('')+'</div>'; }
-  $('#sheetBody').innerHTML='<div class="row" style="margin-bottom:8px"><b>🍽 Add a meal not in Phoenix</b><button class="btn sm" style="flex:none" id="shClose">Back</button></div>'+
+  $('#sheetBody').innerHTML='<div class="row" style="margin-bottom:8px"><b>'+ic('utensils')+' Add a meal not in Phoenix</b><button class="btn sm" style="flex:none" id="shClose">Back</button></div>'+
     '<div class="lbl"><span>What was it?</span></div>'+chips(kinds,'kind')+'<div class="lbl"><span>Where?</span></div>'+chips(LOCS,'loc')+
     '<div class="lbl"><span>Note (optional)</span></div><input id="mWhat" placeholder="e.g. chicken & rice"><div class="sp"></div><button class="btn pri full" id="mLog">Log it</button>';
   $('#shClose').onclick=openMeals;
@@ -944,7 +954,7 @@ function walkShort(w){ return typeof w==='string' ? 'at '+hhmm(w) : fmtDur(w.sec
 function walkDesc(w){ return typeof w==='string' ? hhmm(w)+' (quick log, no timer)' : hhmm(w.at)+' '+fmtDur(w.secs)+' min'+(w.km?', '+w.km.toFixed(2)+' km':''); }
 function openWalks(){
   var k=todayKey(), L=rlog(k).walk;
-  var h='<div class="row" style="margin-bottom:8px"><b>🚶 Walks</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div>'+
+  var h='<div class="row" style="margin-bottom:8px"><b>'+ic('walk')+' Walks</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div>'+
     '<button class="btn pri full" id="wStart">Start 7-min walk</button>'+
     '<p class="small muted" style="margin:8px 0 12px">Timer, distance and route map. Get some horizon in view.</p>';
   if(L.length) h+='<div class="lbl"><span>Today</span></div>'+L.map(function(w,i){ return '<div class="wrow"><span>'+hhmm(tsOf(w))+'</span><span class="muted">'+walkShort(w)+'</span><button class="btn sm x" data-wdel="'+i+'">Remove</button></div>'; }).join('');
@@ -1020,7 +1030,7 @@ function startBreathing(){
   function inhale(){ if(cyc>=4) return finish(); cyc++; cnt.textContent='Round '+cyc+' of 4';
     phase('Breathe in', 4, 1.9, '#0f3a3c', '#8fe0cf', 'rgba(143,224,207,.6)', '#9fe3d6', exhale); }
   function exhale(){ phase('Breathe out', 6, 1, '#1d1a3f', '#a99cf2', 'rgba(169,156,242,.5)', '#c3b8ff', inhale); }
-  function finish(){ clearInterval(BR.iv); tx.textContent='Done. Nice work 👊'; sec.textContent='✓'; cnt.textContent='4 rounds complete';
+  function finish(){ clearInterval(BR.iv); tx.textContent='Done. Nice work.'; sec.textContent='✓'; cnt.textContent='4 rounds complete';
     o.style.transitionDuration='2s'; o.style.backgroundColor='#12302a'; orb.style.transform='scale(1)'; addRecovery('breath');
     BR.t=setTimeout(function(){ o.classList.remove('on'); BR.on=false; },1600); }
   tx.textContent='Get comfortable'; cnt.textContent='4 in · 6 out · 4 rounds'; orb.style.transform='scale(1)';
@@ -1088,20 +1098,20 @@ var PROMPTS={
   feelings:['How are you actually feeling right now — and where do you feel it?','What\'s taking up the most headspace today?','What happened today that you\'re still carrying?','What would you tell a mate who felt like you do?'],
   ideas:['What\'s the idea, in one breath?','Who is it for, and what problem does it kill?','What would the smallest test look like this week?','Why now — what\'s changed?']
 };
-function openRec(mode){ REC.mode=mode||'feelings'; $('#recTx').value=''; setRecMode(REC.mode); $('#rec').classList.add('on'); $('#recHint').textContent = SR_OK?'Tap the mic to start talking':'Live transcription isn\'t available in this mode — tap the text box and use the 🎤 on your keyboard.'; }
+function openRec(mode){ REC.mode=mode||'feelings'; $('#recTx').value=''; setRecMode(REC.mode); $('#rec').classList.add('on'); $('#recHint').textContent = SR_OK?'Tap the mic to start talking':'Live transcription isn\'t available in this mode — tap the text box and use your keyboard\'s mic.'; }
 function setRecMode(m){ REC.mode=m; $$('#recSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m);}); var p=PROMPTS[m]; $('#recPrompt').textContent='Prompt: '+p[Math.floor(Math.random()*p.length)]; }
 function closeRec(){ stopMic(); $('#rec').classList.remove('on'); }
 var SRC = window.SpeechRecognition || window.webkitSpeechRecognition; var SR_OK = !!SRC;
 var DICT={on:false,sr:null,btn:null};
 function dictate(field, btn){
-  if(DICT.on){ DICT.on=false; try{DICT.sr.stop();}catch(e){} btn.classList.remove('live'); btn.textContent='🎙 Talk'; return; }
-  if(!SR_OK){ field.focus(); toast('Use the 🎤 on your keyboard'); return; }
+  if(DICT.on){ DICT.on=false; try{DICT.sr.stop();}catch(e){} btn.classList.remove('live'); btn.textContent='Talk'; return; }
+  if(!SR_OK){ field.focus(); toast('Use the mic on your keyboard'); return; }
   var sr=new SRC(); sr.lang='en-AU'; sr.continuous=true; sr.interimResults=true; var base=field.value; if(base&&!/\s$/.test(base)) base+=' ';
   sr.onresult=function(ev){ var fin='',inter=''; for(var i=ev.resultIndex;i<ev.results.length;i++){ var t=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin+=t; else inter+=t; }
     if(fin) base+=fin.trim()+' '; field.value=base+inter; field.dispatchEvent(new Event('input')); };
-  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ DICT.on=false; btn.classList.remove('live'); btn.textContent='🎙 Talk'; field.focus(); toast('Mic blocked. Use the 🎤 on your keyboard.'); } };
+  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ DICT.on=false; btn.classList.remove('live'); btn.textContent='Talk'; field.focus(); toast('Mic blocked. Use your keyboard\'s mic.'); } };
   sr.onend=function(){ if(DICT.on){ try{ base=field.value; if(base&&!/\s$/.test(base)) base+=' '; sr.start(); }catch(e){} } };
-  try{ sr.start(); DICT={on:true,sr:sr,btn:btn}; btn.classList.add('live'); btn.textContent='■ Stop'; }catch(e){ field.focus(); toast('Use the 🎤 on your keyboard'); }
+  try{ sr.start(); DICT={on:true,sr:sr,btn:btn}; btn.classList.add('live'); btn.textContent='■ Stop'; }catch(e){ field.focus(); toast('Use the mic on your keyboard'); }
 }
 function startMic(){
   if(!SR_OK){ $('#recTx').focus(); return; }
@@ -1113,10 +1123,10 @@ function startMic(){
     if(fin){ REC.base += fin.trim()+' '; }
     $('#recTx').value = REC.base + interim;
   };
-  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ REC.live=false; uiMic(); $('#recHint').textContent='Mic blocked. Use the 🎤 on your keyboard instead.'; } };
+  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ REC.live=false; uiMic(); $('#recHint').textContent='Mic blocked. Use the mic on your keyboard instead.'; } };
   sr.onend=function(){ if(REC.live){ try{ REC.base=$('#recTx').value; if(REC.base && !/\s$/.test(REC.base)) REC.base+=' '; sr.start(); }catch(e){ REC.live=false; uiMic(); } } };
   try{ sr.start(); REC.sr=sr; REC.live=true; uiMic(); $('#recHint').textContent='Listening… tap to pause'; }
-  catch(e){ $('#recHint').textContent='Couldn\'t start the mic. Use the keyboard 🎤.'; }
+  catch(e){ $('#recHint').textContent='Couldn\'t start the mic. Use the keyboard mic.'; }
 }
 function stopMic(){ REC.live=false; if(REC.sr){ try{REC.sr.stop();}catch(e){} REC.sr=null; } uiMic(); if($('#rec').classList.contains('on')) $('#recHint').textContent= SR_OK?'Paused — tap to keep going':''; }
 function uiMic(){ $('#micBtn').classList.toggle('live',REC.live); }
@@ -1197,9 +1207,9 @@ async function runWeekly(){
 }
 
 // ───────────────────────── entries UI ─────────────────────────
-var ICON={feelings:'🫀',ideas:'💡',weekly:'🧭',pulse:'⚡'};
+var ICON={feelings:ic('heart','sm'),ideas:ic('bulb','sm'),weekly:ic('compass','sm'),pulse:ic('zap','sm')};
 function entryRow(e){
-  if(e.kind==='pulse'){ var pa=e.analysis||{}; return '<button class="ent" data-id="'+e.id+'"><div class="t">⚡ <span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span><span class="tag">'+esc(pa.block||'')+'</span></div><p>Energy '+(pa.energy||'–')+(pa.revs?' · revs '+pa.revs:'')+(pa.context?' · '+esc(pa.context):'')+(e.transcript?' — '+esc(e.transcript):'')+'</p></button>'; }
+  if(e.kind==='pulse'){ var pa=e.analysis||{}; return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ic('zap','sm')+' <span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span><span class="tag">'+esc(pa.block||'')+'</span></div><p>Energy '+(pa.energy||'–')+(pa.revs?' · revs '+pa.revs:'')+(pa.context?' · '+esc(pa.context):'')+(e.transcript?' — '+esc(e.transcript):'')+'</p></button>'; }
   var a=e.analysis, title = e.kind==='ideas' && a && a.title ? a.title : (e.kind==='weekly'&&a?a.headline: (a&&a.summary? a.summary : e.transcript));
   var tag = e._busy?'<span class="tag"><span class="spin"></span></span>' : (a?'<span class="tag ok">reflected</span>':'<span class="tag">raw</span>');
   return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ICON[e.kind]+' <span class="small muted">'+esc(niceDate(e.date))+'</span>'+tag+'</div><p>'+esc(title)+'</p></button>';
@@ -1353,7 +1363,7 @@ function brainReadsHTML(list, light){
 function renderTrends(){
   var ts=todSummary(30), tot=ts.by_block.reduce(function(a,b){return a+b.n;},0);
   $('#todTag').textContent=tot+' readings · 30d';
-  $('#todBox').innerHTML = tot ? '<table class="tod"><tr><th>When</th><th>Energy</th><th>Revs</th><th>💡</th><th>🫀</th><th>🚶</th></tr>'+ts.by_block.map(function(b){ return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+(b.ideas||'')+'</td><td>'+(b.feelings||'')+'</td><td>'+(b.walks||'')+'</td></tr>'; }).join('')+'</table><p class="small muted" style="margin:8px 0 0">Energy from pulses and check-ins. Revs = what\'s running underneath. 💡 ideas and 🫀 feelings show when you record them. Needs ~2 weeks to mean much.</p>'
+  $('#todBox').innerHTML = tot ? '<table class="tod"><tr><th>When</th><th>Energy</th><th>Revs</th><th>'+ic('bulb','sm mut')+'</th><th>'+ic('heart','sm mut')+'</th><th>'+ic('walk','sm mut')+'</th></tr>'+ts.by_block.map(function(b){ return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+(b.ideas||'')+'</td><td>'+(b.feelings||'')+'</td><td>'+(b.walks||'')+'</td></tr>'; }).join('')+'</table><p class="small muted" style="margin:8px 0 0">Energy from pulses and check-ins. Revs = what\'s running underneath. The icon columns count ideas, feelings and walks, so you can see when you record them. Needs ~2 weeks to mean much.</p>'
     : '<p class="muted small">Log a few energy pulses through the day and this fills in: your peak, slump and idea windows.</p>';
   $('#dcBox').innerHTML = ts.by_activity.length ? ts.by_activity.map(function(a){ return '<div class="bbar"><span class="nm" style="width:130px">'+esc(a.doing)+'</span><div class="prog"><i style="width:'+a.avg_energy*20+'%;background:'+(a.avg_energy>=3.5?'var(--ok)':a.avg_energy>=2.5?'var(--warm)':'var(--red)')+'"></i></div><b>'+a.avg_energy+'</b><span class="small muted">×'+a.n+'</span></div>'; }).join('') : '<p class="muted small">Tag what you were doing when you log a pulse.</p>';
   var t=todayKey(), g='', start=S.settings.start;
@@ -1498,7 +1508,7 @@ async function reportAI(){
     var a=await callClaude(prompt,{stats:copy, weekly_reviews:weeks, entry_summaries:ents});
     S.settings.reportAI={to:R.to, data:a, at:new Date().toISOString()}; save(); renderReport(); toast('Summary drafted. Tap any text to edit it.');
   }catch(e){ toast(e.message); }
-  b.disabled=false; b.textContent='✨ Write AI summary';
+  b.disabled=false; b.innerHTML=ic('sparkle','sm mut')+' Write AI summary';
 }
 function openReport(){ renderReport(); $('#report').classList.add('on'); document.body.classList.add('printing'); }
 function closeReport(){ $('#report').classList.remove('on'); document.body.classList.remove('printing'); }
@@ -1643,7 +1653,7 @@ var VIEW='today';
 $$('nav.tabs button').forEach(function(b){ b.onclick=function(){ VIEW=b.dataset.v; $$('nav.tabs button').forEach(function(x){x.classList.toggle('on',x===b);}); $$('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+VIEW);}); renderAll(); window.scrollTo(0,0); }; });
 function renderAll(){ renderHeader(); if(VIEW==='today') renderToday(); if(VIEW==='journal') renderJournal(); if(VIEW==='trends') renderTrends(); if(VIEW==='settings') renderSettings(); }
 
-applySkin(S.settings.skin); bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
+hydrateIcons(document); applySkin(S.settings.skin); bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
 document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); } });
 window.addEventListener('online',function(){ fullSync(); });
 var _lastDay=todayKey(); setInterval(function(){ if(todayKey()!==_lastDay){ _lastDay=todayKey(); FOLD={}; renderAll(); } },60000);
