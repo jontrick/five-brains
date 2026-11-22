@@ -150,6 +150,17 @@ table.tod{width:100%;border-collapse:collapse;font-size:12px}
 table.tod td,table.tod th{padding:5px 4px;text-align:left;border-top:1px solid var(--line)}
 table.tod th{color:var(--mut);font-weight:500}
 .cell{display:inline-block;min-width:30px;padding:2px 6px;border-radius:6px;text-align:center;font-weight:700;color:#0d1117}
+.card.fold>h2{cursor:pointer}
+.card.fold>h2::after{content:'▾';margin-left:6px;color:var(--dim);font-size:12px}
+.card.fold.folded>h2::after{content:'▸'}
+.card.folded .fold-body{display:none}
+.card:not(.folded) .fold-sum{display:none}
+.card.folded{padding-bottom:12px}
+.card.folded>h2{margin-bottom:4px}
+.fold-sum{font-size:13px;color:var(--mut)}
+.qtext{font-size:18px;font-weight:650;line-height:1.35;margin:2px 0 12px;letter-spacing:-.01em}
+.qans{font-size:14px;color:var(--mut);border-left:3px solid var(--line);padding-left:10px;margin:0 0 10px;white-space:pre-wrap}
+.donebar{font-size:12px;color:var(--mut);padding:8px 2px 0;text-align:left;width:100%}
 .banner{background:#2b2316;border:1px solid #5a4522;color:var(--warm);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:8px}
 
 /* report */
@@ -203,16 +214,16 @@ table.tod th{color:var(--mut);font-weight:500}
   <div class="card" id="phCard">
     <h2>🔥 Phoenix <span class="tag" id="phStatus">offline</span></h2>
     <div class="ph-grid" id="phGrid"></div>
-    <div class="sp"></div>
-    <div class="row">
-      <input id="wIn" type="number" inputmode="decimal" step="0.1" placeholder="Weigh-in kg">
-      <button class="btn" style="flex:none" id="wBtn">Log weight</button>
+    <div class="row" id="wRow" style="margin-top:10px">
+      <input id="wIn" type="number" inputmode="decimal" step="0.1" placeholder="Weigh-in kg → Phoenix">
+      <button class="btn" style="flex:none" id="wBtn">Log</button>
     </div>
-    <div class="small muted" style="margin-top:6px">Saves to Phoenix's daily weigh-ins.</div>
   </div>
 
-  <div class="card">
+  <div class="card fold" data-fold="am">
     <h2>🌅 Morning check-in <span class="tag" id="amTag"></span></h2>
+    <div class="fold-sum" id="amSum"></div>
+    <div class="fold-body">
     <div class="lbl"><span>Sleep hours</span><b id="slpV">–</b></div>
     <div class="row">
       <button class="btn" style="flex:none" data-slp="-0.25">−</button>
@@ -225,12 +236,12 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="scale" data-k="energy_am"></div>
     <div class="lbl"><span>Today's intention</span></div>
     <input data-t="intention" placeholder="One thing that makes today a win">
+    </div>
   </div>
 
-  <div class="card">
-    <h2>🧠 5Brains check <span class="tag" id="bTag"></span></h2>
-    <p class="small muted" style="margin:0">Rate how well-served each brain is right now. 10 = settled, 1 = it's sounding the alarm.</p>
-    <div id="brainRows"></div>
+  <div class="card" id="qCard">
+    <h2>🧭 Today's question <span class="tag" id="qTag"></span></h2>
+    <div id="qBody"></div>
   </div>
 
   <div class="card">
@@ -245,9 +256,10 @@ table.tod th{color:var(--mut);font-weight:500}
     </div>
   </div>
 
-  <div class="card">
+  <div class="card fold" data-fold="pulse">
     <h2>⚡ Energy pulse <span class="tag" id="plTag"></span></h2>
-    <p class="small muted" style="margin:0">Your notepad. Log it at highs, lows and after big meetings.</p>
+    <div class="fold-sum"><button class="btn pri full" id="pOpen">＋ Log a pulse</button></div>
+    <div class="fold-body">
     <div class="lbl"><span>Energy in the tank</span><b id="pE">–</b></div>
     <div class="scale" id="pEs"></div>
     <div class="lbl"><span>Revs underneath (vs what you show)</span><b id="pR">–</b></div>
@@ -258,6 +270,7 @@ table.tod th{color:var(--mut);font-weight:500}
     <input id="pNote" placeholder="e.g. 3 back-to-back stakeholder meetings">
     <div class="sp"></div>
     <button class="btn pri full" id="pLog">Log pulse</button>
+    </div>
     <div id="pList" style="margin-top:10px"></div>
   </div>
 
@@ -268,7 +281,7 @@ table.tod th{color:var(--mut);font-weight:500}
       <button data-r="snack"><span>🍌 Snack</span><b id="rc-snack">0</b><span class="small" id="rt-snack"></span></button>
       <button data-r="breath"><span>🫁 4-6 breathing</span><b id="rc-breath">0</b><span class="small" id="rt-breath"></span></button>
     </div>
-    <p class="small muted" style="margin:8px 0 0">Breathing opens a guided 4 × (4 in / 6 out). Long-press any button to undo.</p>
+    <p class="small muted" style="margin:8px 0 0">Long-press to undo.</p>
   </div>
 
   <div class="card">
@@ -285,8 +298,10 @@ table.tod th{color:var(--mut);font-weight:500}
     <div id="todayEntries" style="margin-top:10px"></div>
   </div>
 
-  <div class="card">
+  <div class="card fold" data-fold="pm">
     <h2>🌙 Evening check-in <span class="tag" id="pmTag"></span></h2>
+    <div class="fold-sum" id="pmSum"></div>
+    <div class="fold-body">
     <div class="lbl"><span>Energy (evening)</span><b data-show="energy_pm">–</b></div>
     <div class="scale" data-k="energy_pm"></div>
     <div class="lbl"><span>Mood</span><b data-show="mood">–</b></div>
@@ -303,6 +318,7 @@ table.tod th{color:var(--mut);font-weight:500}
     <input data-t="win" placeholder="What went well">
     <div class="lbl"><span>Grateful for</span></div>
     <input data-t="gratitude" placeholder="One thing">
+    </div>
   </div>
 </section>
 
@@ -337,7 +353,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
   <div class="card"><h2>🕐 Your day, by the clock <span class="tag" id="todTag">30 days</span></h2><div id="todBox"></div></div>
   <div class="card"><h2>🔌 Drains vs chargers <span class="tag">avg energy</span></h2><div id="dcBox"></div></div>
-  <div class="card"><h2>🧠 5Brains <span class="tag">7-day avg</span></h2><div id="brainTrend"></div><svg class="chart" id="cBrains"></svg></div>
+  <div class="card"><h2>🧠 5Brains <span class="tag">read from your answers · 30d</span></h2><div id="brainTrend"></div></div>
   <div class="card"><h2>⚡ Energy & mood <span class="tag">14 days</span></h2><svg class="chart" id="cEnergy"></svg>
     <div class="legend"><span><i style="background:var(--acc)"></i>Energy AM</span><span><i style="background:#5fa8e6"></i>Energy PM</span><span><i style="background:var(--acc2)"></i>Mood</span><span><i style="background:var(--warm)"></i>Stress</span></div></div>
   <div class="card"><h2>😴 Sleep <span class="tag">14 days</span></h2><svg class="chart" id="cSleep"></svg>
@@ -441,7 +457,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.2.2';
+var APP_VERSION = '1.3.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -450,7 +466,7 @@ var LS = 'fivebrains_v1';
 
 var DEFAULT_HABITS = [
   {id:'am',      name:'Morning check-in',        auto:'am_checkin', req:true},
-  {id:'brains',  name:'5Brains check',           auto:'brains',     req:true},
+  {id:'q',       name:'Today\'s question',       auto:'question',   req:true},
   {id:'weigh',   name:'Weigh in',                auto:'weighed',    req:true},
   {id:'diary',   name:'Reviewed tomorrow\'s diary', auto:'none',   req:true},
   {id:'pulse',   name:'Logged highs & lows',     auto:'pulse',      req:true},
@@ -474,7 +490,20 @@ var DEFAULT_BRAINS = [
   {id:'blue',   name:'Blue',   color:'#5fa8e6', job:'Clarity & action',       q:'Am I clear on what\'s expected and what I\'m doing next?'},
   {id:'pink',   name:'Pink',   color:'#e58fb8', job:'Agency & possibility',   q:'Do I have room to choose, adapt and create?'}
 ];
-var AUTO_LABEL = {none:'Manual', am_checkin:'Morning check-in', pm_checkin:'Evening check-in', weighed:'Phoenix weigh-in', trained:'Phoenix session', water:'Water target', food:'Phoenix kcal', journal:'Journal entry', brains:'5Brains check', pulse:'Energy pulses', walk:'Walks', snack:'Snacks', breath:'Breathing'};
+var AUTO_LABEL = {none:'Manual', am_checkin:'Morning check-in', pm_checkin:'Evening check-in', weighed:'Phoenix weigh-in', trained:'Phoenix session', water:'Water target', food:'Phoenix kcal', journal:'Journal entry', question:'Today\'s question', pulse:'Energy pulses', walk:'Walks', snack:'Snacks', breath:'Breathing'};
+// Targeted questions — each probes one brain indirectly. Jon never self-rates.
+var QB={
+  red:['What are you bracing for today?','When did your shoulders tense up today, and when did they last drop?','Is there a conversation you\'re putting off? What\'s the worst case you\'re running in your head?','What felt like a threat this week that turned out fine?','Where were you on guard today, and what were you protecting?','What would you do differently today if nothing could go wrong?'],
+  orange:['Who did you feel most like yourself around today?','Was there a moment today you kept the mask on? Who was it for?','Who on the team would notice if you were flat today, and would they tell you?','Who did you trust to carry something today, and what did you take back?','Where did you feel on the outside this week?','Who drained you today, and who topped you up?'],
+  yellow:['What decision is stuck because you don\'t have the facts yet?','What\'s one thing at work that doesn\'t add up right now?','What did you learn today that changed your mind?','Where are you guessing but treating it as certain?','Could you explain today\'s priorities to a stranger, and would they make sense?','What are you assuming about this week that you haven\'t checked?'],
+  blue:['What one outcome makes tomorrow a win, and has it changed since this morning?','What did you finish today, and what did you only start?','Is anyone waiting on you for something you\'ve lost track of?','Did your target move up today? Who moved it?','If you had to drop one thing this week, what would it be?','What\'s the very next action on the thing that\'s bugging you most?'],
+  pink:['Where did you have a real choice today, and where did it feel like you had none?','What did you do today purely because you wanted to?','What idea are you sitting on that you haven\'t let yourself try?','When were you last playful or curious this week?','If you had a free Friday, what would you build?','What would you change about your week if no one needed to approve it?']
+};
+function qFor(k){
+  var d=S.days[k]||{}, L=d.log||{}; if(L.q && L.q.text) return L.q;
+  var n=diffDays('2026-01-01',k)+(L.qskip||0), b=S.brains[((n%5)+5)%5], list=QB[b.id]||QB.red;
+  return {brain:b.id, text:list[Math.floor(n/5)%list.length]};
+}
 var CONTEXTS=['Multi-stakeholder mtg','1-on-1','Deep work','Admin / email','Training','Commute','Family','Side venture','Break','Just woke'];
 var BLOCKS=[[4,7,'Early 4–7'],[7,10,'Morning 7–10'],[10,12,'Late am 10–12'],[12,14,'Midday 12–2'],[14,17,'Arvo 2–5'],[17,20,'Evening 5–8'],[20,28,'Night 8+']];
 function brisHour(iso){ var d=bris(new Date(iso)); return d.getHours()+d.getMinutes()/60; }
@@ -505,6 +534,7 @@ function load(){
   try{ var s = JSON.parse(localStorage.getItem(LS)); if(s && s.settings){ var b = blank();
     for(var k in b) if(!(k in s)) s[k]=b[k];
     for(var k2 in b.settings) if(!(k2 in s.settings)) s.settings[k2]=b.settings[k2];
+    (s.habits||[]).forEach(function(h){ if(h.auto==='brains'){ h.id='q'; h.name='Today\'s question'; h.auto='question'; } });
     return s; } }catch(e){}
   return blank();
 }
@@ -534,7 +564,7 @@ function autoVal(h,k){
     case 'trained': return !!(ph && ph.trained);
     case 'water': return waterMl(k) >= (+S.settings.water||3000);
     case 'food': return !!(ph && ph.kcal!=null && ph.target_kcal!=null && Math.abs(ph.kcal-ph.target_kcal) <= (+S.settings.kcalTol||150));
-    case 'brains': var bb=d.brains||{}; return S.brains.every(function(b){return bb[b.id];});
+    case 'question': return !!(d.log && d.log.q && d.log.q.answer);
     case 'journal': return S.entries.some(function(e){return e.date===k && (e.kind==='feelings'||e.kind==='ideas') && !e._deleted;});
     case 'pulse': return pulsesOn(k).length >= (+S.settings.pulseT||3);
     case 'walk': return ((d.log&&d.log.walk)||[]).length >= (+S.settings.walkT||1);
@@ -607,34 +637,82 @@ function renderToday(){
   setTag('#wtTag', ml>=tg);
   // habits
   var box=$('#habits'); box.innerHTML='';
-  var req=0, reqDone=0;
+  var req=0, reqDone=0, doneEls=[], autos=[];
   S.habits.forEach(function(h){
     var auto=autoVal(h,k), done=habitDone(h,k); if(h.req){req++; if(done) reqDone++;}
     var b=document.createElement('button'); b.className='hab'+(done?' done':'');
     b.innerHTML='<span class="box">'+(done?'✓':'')+'</span><span class="nm">'+esc(h.name)+'</span>'+
       (h.auto!=='none'?'<span class="src">'+(auto?'auto':'')+'</span>':'')+(h.req?'':'<span class="req">bonus</span>');
     b.onclick=function(){ if(auto){ toast('Auto-ticked from '+AUTO_LABEL[h.auto]); return; } d.checks[h.id]=!d.checks[h.id]; touchDay(); renderToday(); renderHeader(); };
-    box.appendChild(b);
+    if(h.auto!=='none') autos.push('<span class="chip" style="'+(done?'border-color:#2f5238;color:var(--ok)':'color:var(--dim)')+'">'+(done?'✓ ':'○ ')+esc(h.name)+'</span>');
+    else if(done) doneEls.push(b); else box.appendChild(b);
   });
+  if(autos.length){ var ar=document.createElement('div'); ar.className='chips'; ar.style.margin='4px 0 2px'; ar.innerHTML=autos.join(''); box.insertBefore(ar, box.firstChild);
+    var al=document.createElement('div'); al.className='small muted'; al.textContent='Tracked automatically'; box.insertBefore(al, box.firstChild); }
+  if(doneEls.length){ var tg=document.createElement('button'); tg.className='donebar'; var open=!!FOLD.ticksDone;
+    tg.textContent=(open?'▾ Hide ':'▸ ')+doneEls.length+' done'; tg.onclick=function(){ FOLD.ticksDone=!open; renderToday(); }; box.appendChild(tg);
+    if(open) doneEls.forEach(function(e){ box.appendChild(e); }); }
   var tk=$('#tkTag'); tk.textContent=reqDone+'/'+req; tk.className='tag'+(req&&reqDone===req?' ok':'');
-  renderPhoenix(); renderBrains(); renderPulse(); renderRecovery();
+  renderPhoenix(); renderQuestion(); renderPulse(); renderRecovery(); applyFolds();
   $$('[data-yn]').forEach(function(g){ var v=d[g.dataset.yn]; $$('button',g).forEach(function(b){ b.classList.toggle('on', v!=null && (b.dataset.v==='1')===v); }); });
   // today's entries
   var te=S.entries.filter(function(e){return e.date===k && !e._deleted;});
   $('#todayEntries').innerHTML = te.filter(function(e){return e.kind!=='pulse';}).map(entryRow).join('');
   bindEntryRows($('#todayEntries'));
 }
-function renderBrains(){
-  var d=day(), bb=d.brains||(d.brains={}), box=$('#brainRows'); box.innerHTML='';
-  S.brains.forEach(function(b){
-    var w=document.createElement('div');
-    w.innerHTML='<div class="brain"><span class="dot" style="background:'+b.color+'"></span><div class="q"><b>'+esc(b.name)+' · '+esc(b.job)+'</b><span class="muted">'+esc(b.q)+'</span></div><span class="val">'+(bb[b.id]?bb[b.id]+'/10':'–')+'</span></div><div class="scale b"></div>';
-    var sc=$('.scale',w);
-    for(var i=1;i<=10;i++){ var bt=document.createElement('button'); bt.textContent=i; bt.dataset.v=i; if(bb[b.id]===i){ bt.classList.add('on'); bt.style.background=b.color; bt.style.borderColor=b.color; } sc.appendChild(bt); }
-    sc.onclick=function(e){ var v=+e.target.dataset.v; if(!v) return; bb[b.id]= bb[b.id]===v?null:v; touchDay(); renderToday(); renderHeader(); };
-    box.appendChild(w);
-  });
-  setTag('#bTag', autoVal({auto:'brains'},todayKey()));
+var FOLD={};
+function isFolded(key){
+  if(key in FOLD) return FOLD[key];
+  var k=todayKey();
+  if(key==='am') return autoVal({auto:'am_checkin'},k);
+  if(key==='pm') return autoVal({auto:'pm_checkin'},k) || bris().getHours()<15;
+  if(key==='pulse') return true;
+  return false;
+}
+function applyFolds(){
+  $$('.card.fold').forEach(function(c){ c.classList.toggle('folded', isFolded(c.dataset.fold)); });
+  var d=day(), k=todayKey();
+  $('#amSum').textContent = autoVal({auto:'am_checkin'},k) ? (d.sleep_hours+' h sleep · quality '+d.sleep_quality+' · energy '+d.energy_am+(d.intention?' · '+d.intention:'')) : 'Tap to start';
+  $('#pmSum').textContent = autoVal({auto:'pm_checkin'},k) ? ('Energy '+d.energy_pm+' · mood '+d.mood+' · stress '+d.stress+(d.win?' · '+d.win:'')) : (bris().getHours()<15?'Opens this arvo. Tap to open now.':'Tap to start');
+}
+function brainById(id){ return S.brains.find(function(b){return b.id===id;})||S.brains[0]; }
+function renderQuestion(){
+  var k=todayKey(), d=day(k), q=qFor(k), done=!!(d.log&&d.log.q&&d.log.q.answer), box=$('#qBody');
+  setTag('#qTag', done);
+  if(!done){
+    box.innerHTML='<p class="qtext">'+esc(q.text)+'</p><textarea id="qAns" rows="3" placeholder="Type, or use the 🎤 on your keyboard"></textarea>'+
+      '<div class="row" style="margin-top:8px"><button class="btn sm" style="flex:none" id="qSkip">Different question</button><button class="btn pri" id="qSave">Save</button></div>';
+    var dr=sessionStorage.getItem('fb_qdraft_'+k); if(dr) $('#qAns').value=dr;
+    $('#qAns').oninput=function(){ sessionStorage.setItem('fb_qdraft_'+k,this.value); };
+    $('#qSkip').onclick=function(){ var L=rlog(k); L.qskip=(L.qskip||0)+1; touchDay(k); renderQuestion(); };
+    $('#qSave').onclick=function(){ var a=$('#qAns').value.trim(); if(a.length<2){ toast('Answer first'); return; }
+      var L=rlog(k); L.q={brain:q.brain, text:q.text, answer:a, at:new Date().toISOString(), read:null}; sessionStorage.removeItem('fb_qdraft_'+k);
+      touchDay(k); renderToday(); renderHeader(); readQuestion(k); };
+    return;
+  }
+  var Q=d.log.q, r=Q.read, h='<p class="qtext" style="font-size:15px;margin-bottom:6px">'+esc(Q.text)+'</p><p class="qans">'+esc(Q.answer)+'</p>';
+  if(Q._busy) h+='<p class="small muted"><span class="spin"></span> Reading…</p>';
+  else if(r && r.primary){ var b=brainById(r.primary.brain_id)||{};
+    h+='<div class="callout" style="border-color:'+(b.color||'var(--acc2)')+'"><b style="color:'+(b.color||'inherit')+'">'+esc(r.primary.brain)+'</b> <span class="tag">'+esc(r.primary.state)+'</span><div style="margin-top:4px">'+esc(r.note||'')+'</div></div>';
+    if(r.other_reads&&r.other_reads.length) h+='<div class="chips" style="margin:6px 0">'+r.other_reads.map(function(o){ var ob=brainById(o.brain_id)||{}; return '<span class="chip" style="border-color:'+(ob.color||'var(--line)')+'">'+esc(o.brain)+': '+esc(o.state)+'</span>'; }).join('')+'</div>';
+    if(r.follow_up) h+='<p class="small" style="margin:8px 0 0"><span class="muted">Sit with:</span> <i>'+esc(r.follow_up)+'</i></p>';
+  } else h+='<button class="btn sm" id="qRetry">Read my answer</button>';
+  h+='<button class="btn sm" style="margin-top:8px" id="qEdit">Edit</button>';
+  box.innerHTML=h;
+  var rt=$('#qRetry'); if(rt) rt.onclick=function(){ readQuestion(k); };
+  $('#qEdit').onclick=function(){ sessionStorage.setItem('fb_qdraft_'+k,Q.answer); var L=rlog(k); L.q={brain:Q.brain,text:Q.text}; touchDay(k); renderToday(); };
+}
+async function readQuestion(k){
+  var L=rlog(k), Q=L.q; if(!Q||!Q.answer) return; Q._busy=true; renderQuestion();
+  try{
+    var b=brainById(Q.brain);
+    var r=await callClaude(PROMPT_Q,{question:Q.text, designed_to_probe:b.name+' ('+b.job+')', answer:Q.answer, answered_at:hhmm(Q.at)+' ('+blockOf(Q.at)+')', day:ctxFor(k)});
+    var byName=function(n){ n=String(n||'').toLowerCase(); var x=S.brains.find(function(z){return n.indexOf(z.name.toLowerCase())===0||n.indexOf(z.id)===0;}); return x?x.id:null; };
+    if(r.primary) r.primary.brain_id=byName(r.primary.brain)||Q.brain;
+    (r.other_reads||[]).forEach(function(o){ o.brain_id=byName(o.brain); });
+    Q.read=r; touchDay(k);
+  }catch(e){ toast(e.message); }
+  Q._busy=false; renderQuestion();
 }
 var PUL={e:null,r:null,ctx:null};
 function renderPulse(){
@@ -649,7 +727,7 @@ function logPulse(){
   if(!PUL.e){ toast('Tap an energy score first'); return; }
   var now=new Date().toISOString(), note=$('#pNote').value.trim();
   S.entries.unshift({id:uuid(),date:todayKey(),kind:'pulse',transcript:note,analysis:{energy:PUL.e,revs:PUL.r,context:PUL.ctx,block:blockOf(now)},created_at:now,updated_at:now,_dirty:true});
-  PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
+  PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; FOLD.pulse=true; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
 }
 function renderRecovery(){
   var L=rlog(todayKey()), t={walk:+S.settings.walkT||1,snack:+S.settings.snackT||3,breath:1}, met=0;
@@ -678,11 +756,9 @@ function renderPhoenix(){
   var cells = [
     ['Session', trained, 'not yet'],
     ['Weight', w?(+w).toFixed(1)+' kg':null, 'not yet'],
-    ['Sets', ph && ph.trained ? (ph.sets_logged||'syncing') : null, '–'],
-    ['kcal', kc, 'no data'],
-    ['Protein', pr, 'no data'],
-    ['Water', waterMl(k)? (waterMl(k)/1000).toFixed(2)+' L':null, '0 L']
+    ['kcal', kc, 'no data']
   ];
+  var wr=$('#wRow'); if(wr) wr.style.display = w ? 'none' : '';
   $('#phGrid').innerHTML = cells.map(function(c){ return '<div><div class="k">'+c[0]+'</div><div class="v'+(c[1]==null?' none':'')+'">'+(c[1]==null?c[2]:c[1])+'</div></div>'; }).join('');
 }
 
@@ -699,6 +775,8 @@ function bindToday(){
   }; });
   $('#wBtn').onclick=logWeight;
   $('#pLog').onclick=logPulse;
+  $('#pOpen').onclick=function(){ FOLD.pulse=false; applyFolds(); };
+  $$('.card.fold>h2').forEach(function(h){ h.onclick=function(){ var key=h.parentNode.dataset.fold; FOLD[key]=!isFolded(key); applyFolds(); }; });
   $$('[data-r]').forEach(function(b){ var x=b.dataset.r, lp=null, fired=false;
     b.addEventListener('touchstart',function(){ fired=false; lp=setTimeout(function(){ fired=true; var L=rlog(todayKey())[x]; if(L.length) ask('Remove the last '+x+'?','Remove').then(function(ok){ if(ok){ L.pop(); touchDay(); renderToday(); } }); },600); },{passive:true});
     b.addEventListener('touchend',function(){ clearTimeout(lp); });
@@ -769,7 +847,7 @@ function ctxFor(k){
     checkin_times: Object.keys(L.times||{}).reduce(function(o,x){ o[x]=hhmm(L.times[x]); return o; },{}),
     goalposts_moved: d.goal_moved==null?null:d.goal_moved, hit_original_target: d.hit_target==null?null:d.hit_target,
     sleep_hours:d.sleep_hours, sleep_quality:d.sleep_quality, energy_am:d.energy_am, energy_pm:d.energy_pm, mood:d.mood, stress:d.stress, focus:d.focus,
-    five_brains: S.brains.reduce(function(o,b){ o[b.name+' ('+b.job+')']=(d.brains&&d.brains[b.id])||null; return o; },{}),
+    question_of_the_day: (L.q&&L.q.answer)? {probes:brainById(L.q.brain).name, question:L.q.text, answer:L.q.answer, read:L.q.read&&L.q.read.primary||null} : null,
     intention:d.intention||null, win:d.win||null, gratitude:d.gratitude||null,
     ticks_done: S.habits.filter(function(h){return habitDone(h,k);}).map(function(h){return h.name;}),
     ticks_missed: S.habits.filter(function(h){return h.req && !habitDone(h,k);}).map(function(h){return h.name;}),
@@ -777,7 +855,8 @@ function ctxFor(k){
     phoenix:{ trained: ph.trained===undefined?null:(k===todayKey() && !ph.trained ? 'not yet (day still open)' : ph.trained), session: ph.session_name||null, weight_kg: S.weights[k]||ph.weight_kg||null, kcal: ph.kcal==null?'no data':ph.kcal, target_kcal: ph.target_kcal==null?'no data':ph.target_kcal } };
 }
 var SYS_BASE = 'You are reviewing a private journal for Jon, a Brisbane-based food & beverage product developer who trains 4x/week, is building his own app ventures on the side, and is working through the 5Brains performance model (Executive Performance Partners). ';
-function brainsLens(){ return 'THE 5BRAINS LENS — assess everything against these five cognitive jobs (each also scored 1-10 by Jon daily, 10 = well-served): '+S.brains.map(function(b){return b.name+'Brain = '+b.job+' ("'+b.q+'")';}).join('; ')+'. Identify which brain is driving, which is under-served or over-firing, and what would bring the system back into balance. Use the brain names exactly as given. '; }
+function brainsLens(){ return 'THE 5BRAINS LENS — assess everything against these five cognitive jobs (Jon does NOT self-rate these; infer each brain\'s state from what he says and does: his answers to targeted daily questions, journal entries, energy pulses and behaviour): '+S.brains.map(function(b){return b.name+'Brain = '+b.job+' ("'+b.q+'")';}).join('; ')+'. Identify which brain is driving, which is under-served or over-firing, and what would bring the system back into balance. Use the brain names exactly as given. '; }
+var PROMPT_Q = SYS_BASE + 'Respond as a performance psychologist trained in the 5Brains model. Jon has answered one targeted question designed to probe a particular brain, without being told which. Infer the brain states from his actual words and the day context. Answers often reveal other brains too. Use the state "unclear" and confidence "low" when the answer is too thin; do not over-read. Keep the note to one or two sentences: specific, warm, direct.\nReturn ONLY JSON: {"primary":{"brain":"name","state":"balanced|under-served|over-firing|unclear","confidence":"low|medium|high"},"other_reads":[{"brain":"name","state":"","evidence":"short"}],"evidence":"short quote from his answer","note":"","follow_up":"one sharper follow-up question, or null"}';
 var PROMPT_FEEL = SYS_BASE + 'Respond as an experienced, warm but direct performance psychologist doing reflective practice. Frameworks, in priority order: (1) the 5Brains lens; (2) energy management (Loehr & Schwartz: physical, emotional, mental, purpose energy — identify what drained and what charged); (3) CBT thinking patterns; (4) ACT — especially the gap between the calm face shown and the revs underneath (the mask), and defusion from moving-goalpost thinking; (5) Lazarus stress appraisal — did this land as threat or challenge; (6) self-determination needs (autonomy, competence, relatedness); (7) emotional granularity — name feelings precisely. Always consider WHEN this was recorded (time of day, what preceded it, recent pulses, recovery done or skipped) — the time-of-day pattern is a core goal. This is reflection, not diagnosis — never label disorders. Be specific to what he actually said; quote short phrases as evidence. Name thinking patterns (e.g. all-or-nothing, catastrophising, mind-reading, should-statements) only where the words genuinely show them. Link to sleep/energy/training data when it plausibly explains something. Keep each field tight. If there is any indication of self-harm, suicidal thinking or being unsafe, set risk_flag true and write a caring risk_note encouraging him to contact Lifeline 13 11 14 or 000.\nReturn ONLY JSON: {"summary":"2-3 sentences","five_brains":{"driving":"brain name","read":[{"brain":"name","state":"over-firing|under-served|balanced|quiet","evidence":"short"}],"rebalance":"one sentence"},"emotions":[{"name":"","intensity":1-10}],"themes":[""],"thinking_patterns":[{"pattern":"","evidence":"short quote","challenge":"gentle counter-question or alternative view"}],"needs":[""],"strengths":[""],"body_link":"how sleep/energy/training/food/recovery may be feeding in, or null","energy_ledger":{"drains":[""],"chargers":[""]},"mask_gap":"comment on surface-calm vs revs-underneath if relevant, else null","appraisal":"threat|challenge|mixed","timing":"what the time of day and lead-up suggest","reframe":"","one_action":"one small concrete action for the next 24h","question":"one question to sit with","risk_flag":false,"risk_note":null}';
 var PROMPT_IDEA = SYS_BASE + 'Respond as a sharp, honest product strategist and thinking partner. Turn the rambling voice note into a crisp idea brief. Note the time of day and his energy state when the idea came — this feeds a map of his best creative windows. Be candid about weaknesses. Note how it connects to his other ventures or earlier ideas if relevant, and whether it competes for his limited time.\nReturn ONLY JSON: {"title":"","summary":"2 sentences","brains_check":[{"brain":"name","verdict":"how this idea looks through that brain (e.g. Red: what threat or risk does it trigger; Yellow: is there evidence; Blue: is the next action clear; Orange: who needs to trust it; Pink: what possibility it opens)"}],"core_insight":"","who_for":"","assumptions":[""],"risks":[""],"next_step":"smallest test this week","effort":"low|medium|high","excitement_vs_evidence":"one line on whether the energy is backed by evidence","captured_when":"time block + energy state at capture","connections":[""],"tags":[""]}';
 var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nReturn ONLY JSON: {"headline":"one line","time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
@@ -949,6 +1028,27 @@ function todSummary(nDays){
     by_activity: Object.keys(ctx).map(function(c){ return {doing:c, avg_energy:avg(ctx[c]), n:ctx[c].length}; }).sort(function(a,b){return b.avg_energy-a.avg_energy;}) };
 }
 function heat(v,inv){ if(v==null) return '<span class="muted">–</span>'; var x=inv?11-v:v; var c=x>=7.5?'#7cc48a':x>=5.5?'#e6cf5c':x>=4?'#e89a5a':'#e07a6e'; return '<span class="cell" style="background:'+c+'">'+v+'</span>'; }
+function brainReads(from,to){
+  var out={}; S.brains.forEach(function(b){ out[b.id]={name:b.name,job:b.job,color:b.color,balanced:0,under:0,over:0,unclear:0,n:0,last:null}; });
+  function add(id,state,note,k){ var o=out[id]; if(!o) return; state=String(state||'').toLowerCase(); o.n++;
+    if(state.indexOf('balanced')===0) o.balanced++; else if(state.indexOf('under')===0) o.under++; else if(state.indexOf('over')===0) o.over++; else o.unclear++;
+    if(note && (!o.last||k>=o.last.k)) o.last={k:k,note:note}; }
+  function idOf(n){ n=String(n||'').toLowerCase(); var x=S.brains.find(function(z){return n.indexOf(z.name.toLowerCase())===0||n.indexOf(z.id)===0;}); return x?x.id:null; }
+  Object.keys(S.days).forEach(function(k){ if(k<from||k>to) return; var Q=S.days[k].log&&S.days[k].log.q; if(!Q||!Q.read) return;
+    if(Q.read.primary) add(Q.read.primary.brain_id||idOf(Q.read.primary.brain), Q.read.primary.state, Q.read.note, k);
+    (Q.read.other_reads||[]).forEach(function(o){ add(o.brain_id||idOf(o.brain), o.state, null, k); }); });
+  S.entries.forEach(function(e){ if(e._deleted||e.kind!=='feelings'||e.date<from||e.date>to||!e.analysis||!e.analysis.five_brains) return;
+    (e.analysis.five_brains.read||[]).forEach(function(r){ add(idOf(r.brain), r.state, r.evidence, e.date); }); });
+  return S.brains.map(function(b){ return out[b.id]; });
+}
+function brainReadsHTML(list, light){
+  if(!list.some(function(b){return b.n;})) return '<p class="'+(light?'muted':'muted small')+'">No reads yet. They build up from Today\'s question and Feelings entries.</p>';
+  var cols=light?{b:'#2f8a4a',u:'#b9781d',o:'#c0453a'}:{b:'var(--ok)',u:'var(--warm)',o:'var(--red)'};
+  return list.map(function(b){ var t=Math.max(1,b.n);
+    return '<div style="margin:10px 0"><div class="lbl" style="margin:0 0 4px"><span><b style="color:'+b.color+'">●</b> '+esc(b.name)+' · '+esc(b.job)+'</span><b>'+b.n+' reads</b></div>'+
+      '<div style="display:flex;height:8px;border-radius:99px;overflow:hidden;background:'+(light?'#eef0f4':'var(--card2)')+'"><i style="width:'+b.balanced/t*100+'%;background:'+cols.b+'"></i><i style="width:'+b.under/t*100+'%;background:'+cols.u+'"></i><i style="width:'+b.over/t*100+'%;background:'+cols.o+'"></i></div>'+
+      '<div class="small '+(light?'muted':'muted')+'" style="margin-top:3px">'+b.balanced+' balanced · '+b.under+' under-served · '+b.over+' over-firing'+(b.last?' · latest: '+esc(b.last.note):'')+'</div></div>'; }).join('');
+}
 function renderTrends(){
   var ts=todSummary(30), tot=ts.by_block.reduce(function(a,b){return a+b.n;},0);
   $('#todTag').textContent=tot+' readings · 30d';
@@ -965,9 +1065,7 @@ function renderTrends(){
   lineChart($('#cEnergy'),[{c:'#7cc4b8',data:col('energy_am')},{c:'#5fa8e6',data:col('energy_pm')},{c:'#9f8cf0',data:col('mood')},{c:'#e6b45c',data:col('stress')}],{min:1,max:10,labels:true});
   lineChart($('#cSleep'),[{c:'#9f8cf0',data:col('sleep_hours')},{c:'#7cc4b8',data:col('sleep_quality')}],{min:0,max:10,labels:true});
   var d7=d14.slice(7);
-  $('#brainTrend').innerHTML=S.brains.map(function(b){ var v=d7.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id];}).filter(Boolean); var avg=v.length?v.reduce(function(x,y){return x+y;},0)/v.length:null;
-    return '<div class="bbar"><span class="nm" style="color:'+b.color+'">'+esc(b.name)+'</span><div class="prog"><i style="width:'+(avg?avg*10:0)+'%;background:'+b.color+'"></i></div><b>'+(avg?avg.toFixed(1):'–')+'</b></div>'; }).join('');
-  lineChart($('#cBrains'),S.brains.map(function(b){ return {c:b.color,data:d14.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id]||null;})}; }),{min:1,max:10,labels:true});
+  $('#brainTrend').innerHTML=brainReadsHTML(brainReads(addDays(t,-29),t));
   var d30=[]; for(var m=29;m>=0;m--) d30.push(addDays(t,-m));
   var wd=d30.map(function(k){ var p=S.phoenix[k]; return S.weights[k]||(p&&p.weight_kg)||null; });
   lineChart($('#cWeight'),[{c:'#e6b45c',data:wd}],{labels:true,dp:1});
@@ -1015,7 +1113,7 @@ function reportStats(){
     weeklies:S.entries.filter(function(e){return e.kind==='weekly'&&!e._deleted&&e.date>=from&&e.date<=to;}),
     trained:ks.filter(function(k){return S.phoenix[k]&&S.phoenix[k].trained;}).length,
     wStart:w.length?w[0]:null, wEnd:w.length?w[w.length-1]:null,
-    brains:brainAvg, habits:habits, tod:todSummary(Math.max(7,ks.length)) };
+    brains:brainReads(from,to), habits:habits, tod:todSummary(Math.max(7,ks.length)) };
 }
 function svgChart(series,opts,w,h){ var svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('class','chart'); svg.style.width='100%'; document.body.appendChild(svg); Object.defineProperty(svg,'clientWidth',{value:w||700}); lineChart(svg,series,opts); var html=svg.outerHTML; svg.remove(); return html.replace(/stroke="#2a3342"/g,'stroke="#e3e6ec"'); }
 function fmt(v,u){ return v==null?'–':v+(u||''); }
@@ -1054,8 +1152,7 @@ function renderReport(){
   h+='<h2>4. Trends</h2><h3>Energy, mood and stress</h3>'+svgChart([{c:'#3f9d8f',data:col('energy_am')},{c:'#3b82c4',data:col('energy_pm')},{c:'#7a63d8',data:col('mood')},{c:'#c98f1f',data:col('stress')}],{min:1,max:10,labels:true})+
      '<p class="muted small">Teal = energy AM · Blue = energy PM · Purple = mood · Amber = stress</p>';
   h+='<h3>Sleep</h3>'+svgChart([{c:'#7a63d8',data:col('sleep_hours')},{c:'#3f9d8f',data:col('sleep_quality')}],{min:0,max:10,labels:true})+'<p class="muted small">Purple = hours · Teal = quality /10 · avg '+fmt(R.sleep,' h')+', quality '+fmt(R.sleepQ)+'</p>';
-  h+='<h3>5Brains</h3><table><tr><th>Brain</th><th>Job</th><th>Avg</th><th>First half</th><th>Second half</th></tr>'+R.brains.map(function(b){return '<tr><td><b style="color:'+b.color+'">●</b> '+esc(b.name)+'</td><td>'+esc(b.job)+'</td><td>'+heat(b.avg)+'</td><td>'+fmt(b.first)+'</td><td>'+fmt(b.second)+'</td></tr>';}).join('')+'</table>';
-  h+=svgChart(S.brains.map(function(b){return {c:b.color,data:K.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id]||null;})};}),{min:1,max:10,labels:true});
+  h+='<h3>5Brains (inferred from targeted questions and journal)</h3>'+brainReadsHTML(R.brains,true);
   if(R.wStart) h+='<p>Bodyweight (Phoenix): '+(+R.wStart).toFixed(1)+' → '+(+R.wEnd).toFixed(1)+' kg</p>';
   h+='<h3>Habit completion</h3><table><tr><th>Tick</th><th>Type</th><th>Days</th><th>%</th></tr>'+R.habits.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+(x.req?'Required':'Bonus')+'</td><td>'+x.done+'/'+R.days+'</td><td>'+heat(Math.round(x.pct/10))+'</td></tr>';}).join('')+'</table>';
   h+='<h2 class="pb">5. Reflections</h2>';
@@ -1066,7 +1163,7 @@ function renderReport(){
    '<p>This is a personal PWA on Jon\'s phone, built after the EPP 5Brains debrief as his “notepad” for logging what comes before his highs and lows. It is linked two ways with Phoenix, his training and nutrition app.</p>'+
    '<table><tr><th>Feature</th><th>What it captures</th><th>Why</th></tr>'+
    '<tr><td>Morning check-in</td><td>Sleep hours and quality, morning energy, the day\'s target</td><td>Baseline energy, and the original target to compare against at night</td></tr>'+
-   '<tr><td>5Brains check</td><td>A daily 1–10 for each brain: '+S.brains.map(function(b){return esc(b.name)+' ('+esc(b.job.toLowerCase())+')';}).join(', ')+'</td><td>Shows which brain is under-served</td></tr>'+
+   '<tr><td>Today\'s question</td><td>One targeted question a day, rotating across the five brains ('+S.brains.map(function(b){return esc(b.name)+': '+esc(b.job.toLowerCase());}).join('; ')+'). Jon answers freely; the brain being probed is not shown.</td><td>Brain states are inferred from the answers, not self-rated</td></tr>'+
    '<tr><td>Energy pulse</td><td>Timestamped energy, revs underneath, current activity, and what came before</td><td>David\'s notepad habit; builds the time-of-day map</td></tr>'+
    '<tr><td>Active recovery</td><td>One-tap 7-min walks, protein/carb snacks, and a guided 4-in/6-out breathing set (×4)</td><td>Focus point 2, and its measured effect on the next pulse</td></tr>'+
    '<tr><td>Water</td><td>Daily water, shared with Phoenix</td><td>Recovery</td></tr>'+
