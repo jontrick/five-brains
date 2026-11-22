@@ -469,7 +469,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.4.0';
+var APP_VERSION = '1.4.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -529,7 +529,7 @@ var S = load();
 function blank(){
   return {
     settings:{ start: todayKey(), water:4500, kcalTol:150,
-      aiUrl:'https://phoenix-coach.jon-d87.workers.dev', aiModel:'claude-sonnet-4-5', reportDate:'2026-12-16', reportAI:null, snackT:3, walkT:1, pulseT:3,
+      aiUrl:'https://phoenix-coach.jon-d87.workers.dev', aiModel:'claude-opus-5-5', reportDate:'2026-12-16', reportAI:null, snackT:3, walkT:1, pulseT:3,
       about:'From my EPP 5Brains debrief (David Munro): Core theme is energy efficiency — performance = energy x capability; capability is constant, energy fluctuates. Goal: same or better outcome for less energy, finish with 20% in the tank. Observed: I read rooms well and build real relationships, but multi-stakeholder settings drain the battery (energy cost, not capability). I look calm on the surface while running high revs underneath — keeping the mask on for the team is a big drain. My goals reset upward mid-day so I finish feeling I missed. Focus 1: protect energy via the diary — review a day ahead, break up draining back-to-backs, follow heavy meetings with energising ones, walk-and-talk 1-on-1s when low. Focus 2: daily active recovery — 7-min walk, protein/carb snack 3-4x/day, regular water, horizon in view, 4-in/6-out breathing x4. Habits: log what precedes highs and lows; invite the team to flag when I look flat or at my best.' },
     habits: JSON.parse(JSON.stringify(DEFAULT_HABITS)),
     brains: JSON.parse(JSON.stringify(DEFAULT_BRAINS)),
@@ -554,6 +554,7 @@ function load(){
       if(s.settings.water===3000) s.settings.water=4500;
       s.scale5=true;
     }
+    if(s.settings.aiModel==='claude-sonnet-4-5') s.settings.aiModel='claude-opus-5-5'; // v1.4.1: default to Opus
     (s.habits||[]).forEach(function(h){ if(h.auto==='brains'){ h.id='q'; h.name='Today\'s question'; h.auto='question'; } });
     return s; } }catch(e){}
   return blank();
