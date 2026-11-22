@@ -536,7 +536,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.10.0';
+var APP_VERSION = '1.10.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -925,7 +925,7 @@ function shrinkPhoto(file){ return new Promise(function(res,rej){ var img=new Im
     c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); c.toBlob(function(b){ b?res(b):rej(new Error('photo')); },'image/jpeg',0.72); };
   img.onerror=function(){ URL.revokeObjectURL(url); rej(new Error('Could not read that photo')); }; img.src=url; }); }
 function mealKey(k,m){ return k+'|'+(m.src==='phoenix'?'phx:'+m.id:'man:'+m.at); }
-function pickPhoto(onBlob){ var f=document.createElement('input'); f.type='file'; f.accept='image/*'; f.setAttribute('capture','environment');
+function pickPhoto(onBlob){ var f=document.createElement('input'); f.type='file'; f.accept='image/*';
   f.onchange=function(){ var file=f.files&&f.files[0]; if(!file) return; shrinkPhoto(file).then(onBlob).catch(function(e){ toast(e.message); }); }; f.click(); }
 function showThumb(el,key){ idbGet(key).then(function(b){ if(!b||!el) return; el.innerHTML='<img src="'+URL.createObjectURL(b)+'" alt="meal photo">'; el.classList.add('has'); }); }
 
