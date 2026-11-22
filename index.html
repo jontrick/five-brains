@@ -192,6 +192,17 @@ table.tod th{color:var(--mut);font-weight:500}
 .skin-sw .pv{height:38px;display:flex;align-items:flex-end;gap:3px;padding:5px}
 .skin-sw .pv i{width:10px;height:10px;border-radius:50%}
 .skin-sw .nm{font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:4px 2px;text-align:center;color:var(--mut)}
+.walkov{position:fixed;inset:0;z-index:46;background:var(--bg);display:none;flex-direction:column}
+.walkov.on{display:flex}
+#walkMap{flex:1;min-height:260px;background:var(--card2)}
+.wpanel{padding:16px 16px calc(var(--sa-b) + 16px);background:var(--card);border-top:1px solid var(--line)}
+.wtime{font-size:56px;font-weight:300;text-align:center;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}
+.wstats{display:flex;justify-content:center;gap:26px;margin:8px 0 14px;color:var(--mut);font-size:13px}
+.wstats b{display:block;color:var(--tx);font-size:18px;font-weight:650;text-align:center}
+.wprog{height:6px;border-radius:9px;background:var(--card2);overflow:hidden;margin:10px 0 4px}
+.wprog i{display:block;height:100%;background:var(--ok);transition:width 1s linear}
+.wrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.wrow .x{margin-left:auto}
 .banner{background:#2b2316;border:1px solid #5a4522;color:var(--warm);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:8px}
 
 /* report */
@@ -321,7 +332,7 @@ table.tod th{color:var(--mut);font-weight:500}
       <button data-r="breath"><span>🫁 Breathing</span><b id="rc-breath">0</b><span class="small" id="rt-breath"></span></button>
     </div>
     <div id="mealAsk"></div>
-    <p class="small muted" style="margin:8px 0 0">Meals come from your Phoenix ticks. Breathing: 4 s in, 6 s out, four rounds. Long-press walk or breathing to undo.</p>
+    <p class="small muted" style="margin:8px 0 0">Tap a tile to log or edit it. Walk opens a timer with GPS; meals come from your Phoenix ticks.</p>
   </div>
 
   <div class="card fold" data-fold="q" id="qCard">
@@ -486,6 +497,17 @@ table.tod th{color:var(--mut);font-weight:500}
 <div id="bCnt" style="font-size:14px;opacity:.8">4 in · 6 out · 4 rounds</div>
 <p class="bdesc">Breathe <b>in through your nose for 4 seconds</b>, filling your belly first. Then breathe <b>out slowly through your mouth for 6 seconds</b>, like fogging a mirror. Four rounds, about 40 seconds. The longer out-breath is what settles you.</p>
 <button class="btn" id="bStop">Stop</button></div>
+<div class="walkov" id="walkov">
+  <div id="walkMap"></div>
+  <div class="wpanel">
+    <div class="wtime" id="wTime">0:00</div>
+    <div class="wprog"><i id="wBar" style="width:0"></i></div>
+    <div class="small muted" style="text-align:center" id="wGoal">Target 7:00</div>
+    <div class="wstats"><div><b id="wKm">0.00</b>km</div><div><b id="wPace">–</b>min/km</div><div><b id="wGps">…</b>GPS</div></div>
+    <div class="row"><button class="btn" id="wCancel" style="flex:.7">Cancel</button><button class="btn" id="wPause">Pause</button><button class="btn pri" id="wFinish">Finish</button></div>
+    <p class="small muted" style="text-align:center;margin:10px 0 0">Keep 5 Brains open on screen while you walk. iPhone pauses GPS for web apps when the screen locks.</p>
+  </div>
+</div>
 <!-- entry sheet -->
 <div class="sheet" id="sheet"><div class="in"><div class="bar"></div><div id="sheetBody"></div></div></div>
 <div class="sheet" id="ask" style="z-index:80;align-items:center"><div class="in" style="border-radius:18px;margin:0 20px;max-width:380px;padding:18px"><p id="askMsg" style="margin:0 0 16px;font-size:15px"></p><div class="row"><button class="btn" id="askNo">Cancel</button><button class="btn pri" id="askYes">OK</button></div></div></div>
@@ -501,7 +523,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.6.0';
+var APP_VERSION = '1.7.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -908,12 +930,78 @@ function renderMealAsk(){
 }
 function renderRecovery(){
   var k=todayKey(), L=rlog(k), t={walk:+S.settings.walkT||1,snack:+S.settings.snackT||3,breath:1}, met=0;
-  ['walk','breath'].forEach(function(x){ var n=L[x].length; $('#rc-'+x).textContent=n; $('#rt-'+x).textContent=n?'last '+hhmm(L[x][n-1]):'target '+t[x]; $('[data-r='+x+']').classList.toggle('met',n>=t[x]); if(n>=t[x]) met++; });
+  ['walk','breath'].forEach(function(x){ var n=L[x].length; $('#rc-'+x).textContent=n; $('#rt-'+x).textContent=n?(x==='walk'?walkShort(L[x][n-1]):'last '+hhmm(tsOf(L[x][n-1]))):'target '+t[x]; $('[data-r='+x+']').classList.toggle('met',n>=t[x]); if(n>=t[x]) met++; });
   var ms=mealsOn(k), lm=ms[ms.length-1], noloc=ms.filter(function(m){return !m.loc;}).length;
   $('#rc-snack').textContent=ms.length; $('#rt-snack').textContent= noloc ? noloc+' need a place' : (lm ? (lm.loc||'')+' '+(lm.at?hhmm(lm.at):'') : 'tick in Phoenix');
   $('[data-r=snack]').classList.toggle('met',ms.length>=t.snack); if(ms.length>=t.snack) met++;
   $('#rcTag').textContent=met+'/3'; $('#rcTag').className='tag'+(met===3?' ok':'');
   renderMealAsk();
+}
+// ───────── Walks: timer + GPS (same approach as Phoenix: Leaflet + OpenStreetMap) ─────────
+function walkSecs(w){ return typeof w==='string'?null:w.secs; }
+function fmtDur(sec){ sec=Math.round(sec||0); return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'); }
+function walkShort(w){ return typeof w==='string' ? 'at '+hhmm(w) : fmtDur(w.secs)+(w.km?' · '+w.km.toFixed(2)+' km':''); }
+function walkDesc(w){ return typeof w==='string' ? hhmm(w)+' (quick log, no timer)' : hhmm(w.at)+' '+fmtDur(w.secs)+' min'+(w.km?', '+w.km.toFixed(2)+' km':''); }
+function openWalks(){
+  var k=todayKey(), L=rlog(k).walk;
+  var h='<div class="row" style="margin-bottom:8px"><b>🚶 Walks</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div>'+
+    '<button class="btn pri full" id="wStart">Start 7-min walk</button>'+
+    '<p class="small muted" style="margin:8px 0 12px">Timer, distance and route map. Get some horizon in view.</p>';
+  if(L.length) h+='<div class="lbl"><span>Today</span></div>'+L.map(function(w,i){ return '<div class="wrow"><span>'+hhmm(tsOf(w))+'</span><span class="muted">'+walkShort(w)+'</span><button class="btn sm x" data-wdel="'+i+'">Remove</button></div>'; }).join('');
+  h+='<button class="btn sm" id="wQuick" style="margin-top:12px">Log a walk without the timer</button>';
+  $('#sheetBody').innerHTML=h; SHEET_ID=null; $('#sheet').classList.add('on');
+  $('#shClose').onclick=function(){ closeSheet(); renderAll(); };
+  $('#wStart').onclick=function(){ closeSheet(); startWalk(); };
+  $('#wQuick').onclick=function(){ L.push({at:new Date().toISOString(), secs:420, km:null, manual:true}); touchDay(k); openWalks(); renderToday(); renderHeader(); toast('Walk logged'); };
+  $$('#sheetBody [data-wdel]').forEach(function(b){ b.onclick=async function(){ if(await ask('Remove this walk?','Remove')){ L.splice(+b.dataset.wdel,1); touchDay(k); openWalks(); renderToday(); renderHeader(); } }; });
+}
+var WK={on:false};
+function loadLeaflet(){ return new Promise(function(res){ if(window.L&&window.L.map) return res(true);
+  var c=document.createElement('link'); c.rel='stylesheet'; c.href='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css'; document.head.appendChild(c);
+  var sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js'; sc.onload=function(){res(true);}; sc.onerror=function(){res(false);}; document.head.appendChild(sc); }); }
+function hav(a,b){ var R=6371,dLat=(b[0]-a[0])*Math.PI/180,dLon=(b[1]-a[1])*Math.PI/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
+async function startWalk(){
+  WK={on:true, paused:false, start:Date.now(), pausedMs:0, pauseAt:null, coords:[], km:0, map:null, path:null, mk:null, watch:null, iv:null, lock:null, at:new Date().toISOString()};
+  $('#walkov').classList.add('on'); $('#wPause').textContent='Pause'; $('#wGps').textContent='…'; $('#wKm').textContent='0.00'; $('#wPace').textContent='–';
+  try{ if(navigator.wakeLock) WK.lock=await navigator.wakeLock.request('screen'); }catch(e){}
+  var ok=await loadLeaflet();
+  if(ok && WK.on){ WK.map=L.map('walkMap',{zoomControl:false,attributionControl:false}).setView([-27.47,153.02],16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(WK.map);
+    var acc=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#7cc4b8';
+    WK.path=L.polyline([],{color:acc,weight:5,opacity:.9}).addTo(WK.map); setTimeout(function(){ WK.map&&WK.map.invalidateSize(); },200); }
+  else $('#walkMap').innerHTML='<div style="display:grid;place-items:center;height:100%;color:var(--mut);font-size:13px">Map unavailable offline. Timer still runs.</div>';
+  if(navigator.geolocation){
+    WK.watch=navigator.geolocation.watchPosition(function(pos){
+      if(!WK.on) return; var c=pos.coords, pt=[+c.latitude.toFixed(5), +c.longitude.toFixed(5)];
+      $('#wGps').textContent = c.accuracy<=20?'good':c.accuracy<=50?'ok':'weak';
+      if(WK.paused || c.accuracy>50) return;
+      var last=WK.coords[WK.coords.length-1];
+      if(last){ var d=hav(last,pt); if(d<0.004) return; WK.km+=d; }
+      WK.coords.push(pt);
+      if(WK.path){ WK.path.setLatLngs(WK.coords); }
+      if(WK.map){ var acc=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()||'#7cc4b8';
+        if(WK.mk) WK.mk.setLatLng(pt); else WK.mk=L.circleMarker(pt,{radius:8,fillColor:acc,color:'#fff',weight:2,fillOpacity:1}).addTo(WK.map);
+        WK.map.panTo(pt); }
+    }, function(err){ $('#wGps').textContent= err.code===1?'off':'—'; }, {enableHighAccuracy:true, maximumAge:2000, timeout:15000});
+  } else $('#wGps').textContent='n/a';
+  WK.iv=setInterval(walkTick,1000); walkTick();
+}
+function walkElapsed(){ return (Date.now()-WK.start-WK.pausedMs-(WK.paused?Date.now()-WK.pauseAt:0))/1000; }
+function walkTick(){ if(!WK.on) return; var s=walkElapsed();
+  $('#wTime').textContent=fmtDur(s); $('#wBar').style.width=Math.min(100,s/420*100)+'%';
+  $('#wGoal').textContent= s>=420 ? '7 minutes done ✓ Finish whenever you like' : 'Target 7:00 · '+fmtDur(420-s)+' to go';
+  $('#wKm').textContent=WK.km.toFixed(2); $('#wPace').textContent= WK.km>0.05 ? fmtDur(s/WK.km) : '–'; }
+function endWalk(){ WK.on=false; clearInterval(WK.iv); if(WK.watch!=null&&navigator.geolocation) navigator.geolocation.clearWatch(WK.watch);
+  try{ WK.lock&&WK.lock.release(); }catch(e){} if(WK.map){ WK.map.remove(); } $('#walkMap').innerHTML=''; $('#walkov').classList.remove('on'); }
+function bindWalk(){
+  $('#wPause').onclick=function(){ if(WK.paused){ WK.pausedMs+=Date.now()-WK.pauseAt; WK.paused=false; this.textContent='Pause'; } else { WK.paused=true; WK.pauseAt=Date.now(); this.textContent='Resume'; } walkTick(); };
+  $('#wCancel').onclick=async function(){ if(walkElapsed()<20 || await ask('Discard this walk?','Discard')){ endWalk(); } };
+  $('#wFinish').onclick=async function(){ var sec=walkElapsed();
+    if(sec<60 && !(await ask('That was under a minute. Log it anyway?','Log it'))) return;
+    var step=Math.max(1,Math.ceil(WK.coords.length/150));
+    var w={at:WK.at, end:new Date().toISOString(), secs:Math.round(sec), km: WK.coords.length>1?+WK.km.toFixed(3):null, route:WK.coords.filter(function(_,i){return i%step===0;})};
+    var k=todayKey(); rlog(k).walk.push(w); touchDay(k); endWalk(); renderToday(); renderHeader();
+    toast('Walk logged · '+fmtDur(w.secs)+(w.km?' · '+w.km.toFixed(2)+' km':'')); };
 }
 function addRecovery(x){ rlog(todayKey())[x].push(new Date().toISOString()); touchDay(); renderToday(); renderHeader(); }
 var BR={on:false,t:null,iv:null};
@@ -969,13 +1057,13 @@ function bindToday(){
     w.updated_at=new Date().toISOString(); w.source='five-brains'; S.dirty.water[k]=1; touchDay(k); renderToday(); renderHeader();
   }; });
   $('#wBtn').onclick=logWeight;
-  $('#pLog').onclick=logPulse;
+  $('#pLog').onclick=logPulse; bindWalk();
   $('#pOpen').onclick=function(){ FOLD.pulse=false; applyFolds(); };
   $$('.card.fold>h2').forEach(function(h){ h.onclick=function(){ var key=h.parentNode.dataset.fold; FOLD[key]=!isFolded(key); applyFolds(); }; });
   $$('[data-r]').forEach(function(b){ var x=b.dataset.r, lp=null, fired=false;
-    b.addEventListener('touchstart',function(){ fired=false; lp=setTimeout(function(){ fired=true; var L=rlog(todayKey())[x]; if(L.length) ask('Remove the last '+x+'?','Remove').then(function(ok){ if(ok){ L.pop(); touchDay(); renderToday(); } }); },600); },{passive:true});
+    if(x==='breath') b.addEventListener('touchstart',function(){ fired=false; lp=setTimeout(function(){ fired=true; var L=rlog(todayKey())[x]; if(L.length) ask('Remove the last '+x+'?','Remove').then(function(ok){ if(ok){ L.pop(); touchDay(); renderToday(); } }); },600); },{passive:true});
     b.addEventListener('touchend',function(){ clearTimeout(lp); });
-    b.onclick=function(){ if(fired){fired=false;return;} if(x==='breath') startBreathing(); else if(x==='snack') openMeals(); else { addRecovery(x); toast('Walk logged. Get the horizon in view.'); } }; });
+    b.onclick=function(){ if(fired){fired=false;return;} if(x==='breath') startBreathing(); else if(x==='snack') openMeals(); else if(x==='walk') openWalks(); }; });
   $('#bStop').onclick=function(){ BR.on=false; clearTimeout(BR.t); clearInterval(BR.iv); $('#breathe').classList.remove('on'); };
   $('#amDone').onclick=function(){ var k=todayKey(); rlog(k).amDone=true; touchDay(k); FOLD.am=true; renderToday(); renderHeader(); toast('Morning logged. Have a good one.'); };
   $('#amThoughts').addEventListener('input',function(){ var L=rlog(); L.am_thoughts=this.value; if(!L.times.am_thoughts) L.times.am_thoughts=new Date().toISOString(); touchDay(); });
@@ -1053,7 +1141,7 @@ function ctxFor(k){
   return { date:k, weekday: niceDate(k).split(' ')[0], scales:'all check-in scores are 1-5 (energy/mood/focus/sleep quality: 5 = best; stress and revs: 5 = maxed)',
     full_day: isPerfect(k), missed_items: reqMissed(k), miss_reason: L.miss||null, week_miss_reflection: L.missWeek||null,
     energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:a.context||null, preceded_by:e.transcript||null}; }),
-    recovery: { walks:(L.walk||[]).map(hhmm), meals_and_snacks:mealsOn(k).map(function(m){ return (m.at?hhmm(m.at):'?')+' '+mealLabel(m); }), breathing:(L.breath||[]).map(hhmm) },
+    recovery: { walks:(L.walk||[]).map(walkDesc), meals_and_snacks:mealsOn(k).map(function(m){ return (m.at?hhmm(m.at):'?')+' '+mealLabel(m); }), breathing:(L.breath||[]).map(hhmm) },
     morning_thoughts: L.am_thoughts||null,
     checkin_times: Object.keys(L.times||{}).reduce(function(o,x){ o[x]=hhmm(L.times[x]); return o; },{}),
     goalposts_moved: d.goal_moved==null?null:d.goal_moved, hit_original_target: d.hit_target==null?null:d.hit_target,
@@ -1234,7 +1322,7 @@ function todSummary(nDays){
   Object.keys(S.days).forEach(function(k){ if(k<since) return; var d=S.days[k], tm=(d.log&&d.log.times)||{};
     if(d.energy_am&&tm.energy_am) agg[blockOf(tm.energy_am)].e.push(d.energy_am);
     if(d.energy_pm&&tm.energy_pm) agg[blockOf(tm.energy_pm)].e.push(d.energy_pm);
-    ((d.log&&d.log.walk)||[]).forEach(function(w){ agg[blockOf(w)].walks++; }); });
+    ((d.log&&d.log.walk)||[]).forEach(function(w){ agg[blockOf(tsOf(w))].walks++; }); });
   function avg(a){ return a.length? +(a.reduce(function(x,y){return x+y;},0)/a.length).toFixed(1) : null; }
   return { by_block: BLOCKS.map(function(b){ var g=agg[b[2]]; return {block:b[2], avg_energy:avg(g.e), avg_revs:avg(g.r), n:g.e.length, ideas:g.ideas, feelings:g.feelings, walks:g.walks}; }),
     by_activity: Object.keys(ctx).map(function(c){ return {doing:c, avg_energy:avg(ctx[c]), n:ctx[c].length}; }).sort(function(a,b){return b.avg_energy-a.avg_energy;}) };
@@ -1307,7 +1395,7 @@ function reportStats(){
   // recovery effect: pulses within 90 min after a walk or breathing set vs others
   var after=[], other=[];
   pul.forEach(function(e){ var L=(S.days[e.date]&&S.days[e.date].log)||{}, t=new Date(e.created_at).getTime();
-    var rec=(L.walk||[]).concat(L.breath||[]).some(function(w){ var dt=(t-new Date(w).getTime())/60000; return dt>=0&&dt<=90; });
+    var rec=(L.walk||[]).concat(L.breath||[]).some(function(w){ var dt=(t-new Date(tsOf(w)).getTime())/60000; return dt>=0&&dt<=90; });
     (rec?after:other).push(e.analysis&&e.analysis.energy); });
   var gm=D('goal_moved').filter(function(x){return x!=null;}), ht=D('hit_target').filter(function(x){return x!=null;});
   var n=Math.max(1,ks.length), half=Math.floor(ks.length/2);
@@ -1315,7 +1403,7 @@ function reportStats(){
     return {name:b.name, job:b.job, color:b.color, avg:v(ks), first:v(ks.slice(0,half)), second:v(ks.slice(half))}; });
   var habits=S.habits.map(function(h){ var c=ks.filter(function(k){return habitDone(h,k);}).length; return {name:h.name, req:h.req, done:c, pct:Math.round(c/n*100)}; });
   var L=function(x){ return ks.reduce(function(a,k){ var d=S.days[k]; return a+((d&&d.log&&d.log[x])||[]).length; },0); };
-  var walkTimes=[]; ks.forEach(function(k){ var d=S.days[k]; ((d&&d.log&&d.log.walk)||[]).forEach(function(w){ walkTimes.push(blockOf(w)); }); });
+  var walkTimes=[]; ks.forEach(function(k){ var d=S.days[k]; ((d&&d.log&&d.log.walk)||[]).forEach(function(w){ walkTimes.push(blockOf(tsOf(w))); }); });
   var stake=pul.filter(function(e){return e.analysis&&e.analysis.context==='Multi-stakeholder mtg';}).map(function(e){return e.analysis.energy;});
   var nonStake=pul.filter(function(e){return e.analysis&&e.analysis.context&&e.analysis.context!=='Multi-stakeholder mtg';}).map(function(e){return e.analysis.energy;});
   var w=ks.map(function(k){ var p=S.phoenix[k]; return S.weights[k]||(p&&p.weight_kg)||null; }).filter(Boolean);
@@ -1325,6 +1413,7 @@ function reportStats(){
     afterRec:avgOf(after), afterRecN:after.filter(Boolean).length, noRec:avgOf(other), noRecN:other.filter(Boolean).length,
     stakeE:avgOf(stake), stakeN:stake.length, nonStakeE:avgOf(nonStake),
     goalMoved:gm.length?Math.round(gm.filter(Boolean).length/gm.length*100):null, goalN:gm.length, hitTarget:ht.length?Math.round(ht.filter(Boolean).length/ht.length*100):null,
+    walkMins: ks.reduce(function(a,k){ var d=S.days[k]; return a+((d&&d.log&&d.log.walk)||[]).reduce(function(b,w){ return b+((walkSecs(w)||420)/60); },0); },0),
     walks:L('walk'), snacks:ks.reduce(function(a,k){ return a+mealsOn(k).length; },0), breaths:L('breath'), walkBlocks:walkTimes,
     waterDays:ks.filter(function(k){return waterMl(k)>=(+S.settings.water||3000);}).length,
     feelings:S.entries.filter(function(e){return e.kind==='feelings'&&!e._deleted&&e.date>=from&&e.date<=to;}).length,
@@ -1355,7 +1444,7 @@ function renderReport(){
      '<tr><td>Energy after multi-stakeholder meetings</td><td>'+fmt(R.stakeE)+' (n='+R.stakeN+') vs '+fmt(R.nonStakeE)+' for everything else</td></tr></table>';
   if(A&&A.focus1) h+='<div class="box" contenteditable>'+esc(A.focus1)+'</div>';
   h+='<h3>Focus point 2: active recovery, daily</h3><table><tr><th>Measure</th><th>Result</th></tr>'+
-     '<tr><td>7-minute walks</td><td>'+R.walks+' total · '+(R.walks/Math.max(1,R.days)).toFixed(1)+'/day</td></tr>'+
+     '<tr><td>7-minute walks</td><td>'+R.walks+' total · '+(R.walks/Math.max(1,R.days)).toFixed(1)+'/day · '+Math.round(R.walkMins)+' min walked</td></tr>'+
      '<tr><td>Meals & snacks (target '+(+S.settings.snackT||3)+'/day)</td><td>'+R.snacks+' total · '+(R.snacks/Math.max(1,R.days)).toFixed(1)+'/day</td></tr>'+
      '<tr><td>4-6 breathing sets</td><td>'+R.breaths+' total</td></tr>'+
      '<tr><td>Water target hit</td><td>'+R.waterDays+'/'+R.days+' days</td></tr>'+
