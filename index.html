@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="5 Brains">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>5 Brains</title>
+<style>
+:root{
+  --bg:#0d1117; --card:#161b24; --card2:#1d2430; --line:#2a3342;
+  --tx:#e8edf4; --mut:#8a96a8; --dim:#5d687a;
+  --acc:#7cc4b8; --acc2:#9f8cf0; --warm:#e6b45c; --red:#e07a6e; --ok:#7cc48a;
+  --r:16px; --sa-t:env(safe-area-inset-top); --sa-b:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding-top:var(--sa-t);padding-bottom:calc(72px + var(--sa-b))}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,textarea,select{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--acc)}
+textarea{resize:vertical;min-height:70px}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
+.wrap{max-width:560px;margin:0 auto;padding:12px 14px 24px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;padding:14px 16px 6px;max-width:560px;margin:0 auto}
+.dayn{font-size:30px;font-weight:750;letter-spacing:-.02em}
+.dayn small{font-size:15px;color:var(--mut);font-weight:500;margin-left:4px}
+.sub{color:var(--mut);font-size:13px}
+.streak{text-align:right}
+.streak b{font-size:22px;color:var(--warm)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
+.card h2{font-size:16px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.card h2 .tag{margin-left:auto}
+.tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;background:var(--card2);color:var(--mut);border:1px solid var(--line)}
+.tag.ok{color:var(--ok);border-color:#2f5238}.tag.warn{color:var(--warm);border-color:#5a4522}.tag.ph{color:var(--warm)}
+.row{display:flex;gap:10px;align-items:center}
+.row>*{flex:1}
+.lbl{font-size:12px;color:var(--mut);margin:10px 0 6px;display:flex;justify-content:space-between}
+.lbl b{color:var(--tx)}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.scale button{height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--line);font-size:13px;color:var(--mut)}
+.scale button.on{background:var(--acc);color:#0d1117;border-color:var(--acc);font-weight:700}
+.scale.p button.on{background:var(--acc2);border-color:var(--acc2)}
+.scale.s button.on{background:var(--warm);border-color:var(--warm)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 14px;border-radius:12px;background:var(--card2);border:1px solid var(--line);font-weight:600}
+.btn.pri{background:var(--acc);color:#0d1117;border-color:var(--acc)}
+.btn.vio{background:var(--acc2);color:#0d1117;border-color:var(--acc2)}
+.btn.sm{padding:7px 10px;font-size:13px;border-radius:10px}
+.btn.full{width:100%}
+.btn:disabled{opacity:.5}
+.habits{display:flex;flex-direction:column;gap:6px}
+.hab{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--line);text-align:left;width:100%}
+.hab .box{width:24px;height:24px;border-radius:7px;border:2px solid var(--dim);flex:none;display:grid;place-items:center;font-size:15px;font-weight:800}
+.hab.done .box{background:var(--ok);border-color:var(--ok);color:#0d1117}
+.hab.done .nm{color:var(--mut);text-decoration:line-through;text-decoration-color:var(--dim)}
+.hab .nm{flex:1}
+.hab .src{font-size:11px;color:var(--warm)}
+.hab .req{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.prog{height:8px;border-radius:99px;background:var(--card2);overflow:hidden;border:1px solid var(--line)}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),#5fa8e6);border-radius:99px;transition:width .3s}
+.ph-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ph-grid>div{background:var(--card2);border-radius:12px;padding:10px;border:1px solid var(--line)}
+.ph-grid .k{font-size:11px;color:var(--mut)}.ph-grid .v{font-size:17px;font-weight:700;margin-top:2px}
+.ph-grid .v.none{color:var(--dim);font-weight:500;font-size:14px}
+.jbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.jbtns .btn{padding:16px 10px;flex-direction:column;gap:2px}
+.jbtns .btn span{font-size:24px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(13,17,23,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + var(--sa-b));z-index:20}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--dim);padding:4px}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button.on{color:var(--acc)}
+.view{display:none}.view.on{display:block}
+/* recorder */
+.rec{position:fixed;inset:0;background:var(--bg);z-index:40;display:none;flex-direction:column;padding:calc(var(--sa-t) + 12px) 16px calc(var(--sa-b) + 16px)}
+.rec.on{display:flex}
+.rec .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--card2);border-radius:12px;padding:4px;border:1px solid var(--line)}
+.rec .seg button{padding:9px;border-radius:9px;font-weight:600;color:var(--mut)}
+.rec .seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 0 var(--line)}
+.rec textarea{flex:1;min-height:180px;margin:12px 0;font-size:16px;line-height:1.5}
+.mic{width:96px;height:96px;border-radius:50%;margin:6px auto 12px;display:grid;place-items:center;background:var(--card2);border:2px solid var(--line)}
+.mic svg{width:40px;height:40px}
+.mic.live{background:var(--red);border-color:var(--red);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(224,122,110,.5)}70%{box-shadow:0 0 0 22px rgba(224,122,110,0)}100%{box-shadow:0 0 0 0 rgba(224,122,110,0)}}
+.hint{font-size:12px;color:var(--mut);text-align:center;min-height:18px}
+/* entries */
+.ent{padding:12px;border-radius:12px;background:var(--card2);border:1px solid var(--line);margin-bottom:8px;width:100%;text-align:left;display:block}
+.ent .t{font-weight:650;display:flex;gap:8px;align-items:center}
+.ent .t .tag{margin-left:auto}
+.ent p{margin:4px 0 0;color:var(--mut);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.an h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 0 6px}
+.an p{margin:0 0 6px}
+.an ul{margin:0;padding-left:18px}.an li{margin:3px 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:4px 9px;border-radius:99px;background:var(--card2);border:1px solid var(--line)}
+.callout{border-left:3px solid var(--acc2);padding:8px 12px;background:var(--card2);border-radius:0 10px 10px 0;margin:6px 0}
+.callout.w{border-color:var(--warm)}
+.crisis{border:1px solid var(--red);background:#2a1715;border-radius:12px;padding:12px;margin:10px 0}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.sheet .in{background:var(--bg);border-top:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow:auto;padding:16px 16px calc(var(--sa-b) + 20px);max-width:620px;margin:0 auto}
+.sheet .bar{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 12px}
+/* trends */
+.grid75{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
+.grid75 i{aspect-ratio:1;border-radius:3px;background:var(--card2);border:1px solid var(--line)}
+.grid75 i.p{background:var(--ok);border-color:var(--ok)}
+.grid75 i.m{background:#3a2522;border-color:#5a332d}
+.grid75 i.t{outline:2px solid var(--acc);outline-offset:1px}
+.chart{width:100%;height:90px;display:block}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--mut);margin-top:4px}
+.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.set-h{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.set-h input{padding:8px 10px}
+.set-h select{padding:8px 6px;width:auto;font-size:12px}
+.toast{position:fixed;left:50%;top:calc(var(--sa-t) + 10px);transform:translateX(-50%) translateY(-120%);background:var(--card2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;z-index:60;transition:transform .25s;font-size:14px;max-width:90vw}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.muted{color:var(--mut)}.small{font-size:12px}
+.sp{height:8px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.brain{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+.brain .dot{width:12px;height:12px;border-radius:50%;flex:none}
+.brain .q{flex:1;font-size:13px}.brain .q b{display:block;font-size:14px}
+.brain .val{font-weight:700;font-size:13px;min-width:34px;text-align:right}
+.scale.b button.on{color:#0d1117;font-weight:700}
+.bbar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:13px}
+.bbar .nm{width:64px}.bbar .prog{flex:1}
+.ctx{display:flex;flex-wrap:wrap;gap:6px}
+.ctx button{font-size:12px;padding:6px 10px;border-radius:99px;background:var(--card2);border:1px solid var(--line);color:var(--mut)}
+.ctx button.on{background:var(--acc2);color:#0d1117;border-color:var(--acc2);font-weight:600}
+.pl{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
+.pl .tm{color:var(--mut);width:52px;flex:none}.pl .e{font-weight:700;width:52px;flex:none}.pl .n{flex:1;color:var(--mut)}
+.rcv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rcv button{padding:12px 6px;border-radius:12px;background:var(--card2);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--mut)}
+.rcv button b{font-size:20px;color:var(--tx)}
+.rcv button.met{border-color:var(--ok)}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.yn button{padding:9px;border-radius:10px;background:var(--card2);border:1px solid var(--line);color:var(--mut);font-weight:600}
+.yn button.on{background:var(--acc);color:#0d1117;border-color:var(--acc)}
+.breathe{position:fixed;inset:0;background:rgba(13,17,23,.97);z-index:45;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.breathe.on{display:flex}
+.breathe .orb{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,var(--acc) 0%,#3d6f68 70%);transition:transform 4s ease-in-out}
+.breathe .bt{font-size:22px;font-weight:650}
+table.tod{width:100%;border-collapse:collapse;font-size:12px}
+table.tod td,table.tod th{padding:5px 4px;text-align:left;border-top:1px solid var(--line)}
+table.tod th{color:var(--mut);font-weight:500}
+.cell{display:inline-block;min-width:30px;padding:2px 6px;border-radius:6px;text-align:center;font-weight:700;color:#0d1117}
+.banner{background:#2b2316;border:1px solid #5a4522;color:var(--warm);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:8px}
+
+/* report */
+.report{position:fixed;inset:0;z-index:70;background:#fff;color:#1b2230;overflow:auto;display:none;font-size:13px;line-height:1.5}
+.report.on{display:block}
+.rp-bar{position:sticky;top:0;background:#0d1117;color:#e8edf4;display:flex;gap:8px;padding:calc(var(--sa-t) + 8px) 12px 8px;z-index:2;flex-wrap:wrap}
+.rp-bar .btn{color:#e8edf4}
+.rp{max-width:760px;margin:0 auto;padding:24px 22px 60px}
+.rp h1{font-size:26px;margin:0 0 4px;color:#0d1117}.rp h2{font-size:16px;margin:26px 0 8px;padding-bottom:4px;border-bottom:2px solid #e6e9ef;color:#0d1117}
+.rp h3{font-size:13px;margin:14px 0 4px;color:#3b4556}
+.rp p{margin:4px 0 8px}.rp ul{margin:4px 0 8px;padding-left:18px}
+.rp .muted{color:#6b7587}
+.rp .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.rp .kpi{border:1px solid #e6e9ef;border-radius:10px;padding:8px 10px}.rp .kpi b{display:block;font-size:20px;color:#0d1117}.rp .kpi span{font-size:11px;color:#6b7587}
+.rp table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+.rp td,.rp th{border-bottom:1px solid #eef0f4;padding:5px 6px;text-align:left}.rp th{color:#6b7587;font-weight:600;background:#f7f8fa}
+.rp .cell{color:#0d1117}
+.rp .box{border-left:4px solid #9f8cf0;background:#f6f4ff;padding:8px 12px;border-radius:0 8px 8px 0;margin:6px 0}
+.rp .box.g{border-color:#7cc48a;background:#f0f8f2}.rp .box.w{border-color:#e6b45c;background:#fdf7ea}
+.rp .chart{height:110px;background:#fbfbfd;border:1px solid #eef0f4;border-radius:8px}
+.rp .dots{display:flex;gap:6px;margin:2px 0 10px}.rp .dots i{width:14px;height:14px;border-radius:50%}
+.rp [contenteditable]{outline:1px dashed transparent}.rp [contenteditable]:focus{outline-color:#9f8cf0}
+.rp .pb{break-before:page}
+@media print{
+  @page{size:A4;margin:14mm}
+  html,body{padding:0!important;background:#fff!important}
+  body.printing > *:not(#report){display:none!important}
+  .report{position:static;overflow:visible;display:block}
+  .rp-bar{display:none}
+  .rp{padding:0;max-width:none}
+  .rp h2{break-after:avoid}.rp .kpis,.rp table,.rp .box,.rp svg{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <div class="dayn" id="hDay">Day 1<small>/ 75</small></div>
+    <div class="sub" id="hDate"></div>
+  </div>
+  <div class="streak"><b id="hStreak">0</b><div class="sub">day streak</div></div>
+</header>
+
+<main class="wrap">
+
+<!-- ═════════ TODAY ═════════ -->
+<section class="view on" id="v-today">
+  <div id="strictBanner"></div>
+
+  <div class="card" id="phCard">
+    <h2>🔥 Phoenix <span class="tag" id="phStatus">offline</span></h2>
+    <div class="ph-grid" id="phGrid"></div>
+    <div class="sp"></div>
+    <div class="row">
+      <input id="wIn" type="number" inputmode="decimal" step="0.1" placeholder="Weigh-in kg">
+      <button class="btn" style="flex:none" id="wBtn">Log weight</button>
+    </div>
+    <div class="small muted" style="margin-top:6px">Saves to Phoenix's daily weigh-ins.</div>
+  </div>
+
+  <div class="card">
+    <h2>🌅 Morning check-in <span class="tag" id="amTag"></span></h2>
+    <div class="lbl"><span>Sleep hours</span><b id="slpV">–</b></div>
+    <div class="row">
+      <button class="btn" style="flex:none" data-slp="-0.25">−</button>
+      <input id="slpIn" type="number" inputmode="decimal" step="0.25" placeholder="e.g. 7.5" style="text-align:center">
+      <button class="btn" style="flex:none" data-slp="0.25">+</button>
+    </div>
+    <div class="lbl"><span>Sleep quality</span><b data-show="sleep_quality">–</b></div>
+    <div class="scale p" data-k="sleep_quality"></div>
+    <div class="lbl"><span>Energy (morning)</span><b data-show="energy_am">–</b></div>
+    <div class="scale" data-k="energy_am"></div>
+    <div class="lbl"><span>Today's intention</span></div>
+    <input data-t="intention" placeholder="One thing that makes today a win">
+  </div>
+
+  <div class="card">
+    <h2>🧠 5Brains check <span class="tag" id="bTag"></span></h2>
+    <p class="small muted" style="margin:0">Rate how well-served each brain is right now. 10 = settled, 1 = it's sounding the alarm.</p>
+    <div id="brainRows"></div>
+  </div>
+
+  <div class="card">
+    <h2>💧 Water <span class="tag" id="wtTag"></span></h2>
+    <div class="prog"><i id="wtBar" style="width:0"></i></div>
+    <div class="lbl" style="margin-top:6px"><span id="wtTxt">0 / 3000 ml</span><span class="small" id="wtSrc"></span></div>
+    <div class="row">
+      <button class="btn sm" data-w="250">+250</button>
+      <button class="btn sm" data-w="500">+500</button>
+      <button class="btn sm" data-w="750">+750</button>
+      <button class="btn sm" data-w="undo">Undo</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⚡ Energy pulse <span class="tag" id="plTag"></span></h2>
+    <p class="small muted" style="margin:0">Your notepad. Log it at highs, lows and after big meetings.</p>
+    <div class="lbl"><span>Energy in the tank</span><b id="pE">–</b></div>
+    <div class="scale" id="pEs"></div>
+    <div class="lbl"><span>Revs underneath (vs what you show)</span><b id="pR">–</b></div>
+    <div class="scale s" id="pRs"></div>
+    <div class="lbl"><span>What were you just doing?</span></div>
+    <div class="ctx" id="pCtx"></div>
+    <div class="lbl"><span>What came before it?</span></div>
+    <input id="pNote" placeholder="e.g. 3 back-to-back stakeholder meetings">
+    <div class="sp"></div>
+    <button class="btn pri full" id="pLog">Log pulse</button>
+    <div id="pList" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔋 Active recovery <span class="tag" id="rcTag"></span></h2>
+    <div class="rcv">
+      <button data-r="walk"><span>🚶 7-min walk</span><b id="rc-walk">0</b><span class="small" id="rt-walk"></span></button>
+      <button data-r="snack"><span>🍌 Snack</span><b id="rc-snack">0</b><span class="small" id="rt-snack"></span></button>
+      <button data-r="breath"><span>🫁 4-6 breathing</span><b id="rc-breath">0</b><span class="small" id="rt-breath"></span></button>
+    </div>
+    <p class="small muted" style="margin:8px 0 0">Breathing opens a guided 4 × (4 in / 6 out). Long-press any button to undo.</p>
+  </div>
+
+  <div class="card">
+    <h2>✅ Daily ticks <span class="tag" id="tkTag"></span></h2>
+    <div class="habits" id="habits"></div>
+  </div>
+
+  <div class="card">
+    <h2>🎙 Journal</h2>
+    <div class="jbtns">
+      <button class="btn" data-rec="feelings"><span>🫀</span>Feelings</button>
+      <button class="btn" data-rec="ideas"><span>💡</span>Ideas</button>
+    </div>
+    <div id="todayEntries" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
+    <h2>🌙 Evening check-in <span class="tag" id="pmTag"></span></h2>
+    <div class="lbl"><span>Energy (evening)</span><b data-show="energy_pm">–</b></div>
+    <div class="scale" data-k="energy_pm"></div>
+    <div class="lbl"><span>Mood</span><b data-show="mood">–</b></div>
+    <div class="scale p" data-k="mood"></div>
+    <div class="lbl"><span>Stress</span><b data-show="stress">–</b></div>
+    <div class="scale s" data-k="stress"></div>
+    <div class="lbl"><span>Focus</span><b data-show="focus">–</b></div>
+    <div class="scale" data-k="focus"></div>
+    <div class="lbl"><span>Did the goalposts move up during the day?</span></div>
+    <div class="yn" data-yn="goal_moved"><button data-v="1">Yes, they moved</button><button data-v="0">No, held steady</button></div>
+    <div class="lbl"><span>Hit this morning's original target?</span></div>
+    <div class="yn" data-yn="hit_target"><button data-v="1">Yes</button><button data-v="0">No</button></div>
+    <div class="lbl"><span>Win of the day</span></div>
+    <input data-t="win" placeholder="What went well">
+    <div class="lbl"><span>Grateful for</span></div>
+    <input data-t="gratitude" placeholder="One thing">
+  </div>
+</section>
+
+<!-- ═════════ JOURNAL ═════════ -->
+<section class="view" id="v-journal">
+  <div class="jbtns" style="margin-top:4px">
+    <button class="btn" data-rec="feelings"><span>🫀</span>Feelings</button>
+    <button class="btn" data-rec="ideas"><span>💡</span>Ideas</button>
+  </div>
+  <div class="card">
+    <h2>📄 Report for Dave</h2>
+    <p class="muted small" style="margin:0 0 10px">A PDF of everything since Day 1: how the app works, your results against David's two focus points, energy by time of day and a draft optimal day.</p>
+    <button class="btn pri full" data-report>Open report</button>
+  </div>
+  <div class="card">
+    <h2>🧭 Weekly review</h2>
+    <p class="muted small" style="margin:0 0 10px">Reads the last 7 days of check-ins, journal entries and Phoenix data, then looks for patterns.</p>
+    <button class="btn vio full" id="weeklyBtn">Run weekly review</button>
+  </div>
+  <div class="row" style="margin:6px 0 10px">
+    <select id="jFilter"><option value="all">All entries</option><option value="feelings">Feelings</option><option value="ideas">Ideas</option><option value="weekly">Weekly reviews</option><option value="pulse">Energy pulses</option></select>
+  </div>
+  <div id="entryList"></div>
+</section>
+
+<!-- ═════════ TRENDS ═════════ -->
+<section class="view" id="v-trends">
+  <div class="card">
+    <h2>🏁 Challenge <span class="tag" id="chTag"></span></h2>
+    <div class="grid75" id="grid75"></div>
+    <div class="legend"><span><i style="background:var(--ok)"></i>Perfect day</span><span><i style="background:#5a332d"></i>Missed</span><span><i style="background:var(--acc)"></i>Today</span></div>
+  </div>
+  <div class="card"><h2>🕐 Your day, by the clock <span class="tag" id="todTag">30 days</span></h2><div id="todBox"></div></div>
+  <div class="card"><h2>🔌 Drains vs chargers <span class="tag">avg energy</span></h2><div id="dcBox"></div></div>
+  <div class="card"><h2>🧠 5Brains <span class="tag">7-day avg</span></h2><div id="brainTrend"></div><svg class="chart" id="cBrains"></svg></div>
+  <div class="card"><h2>⚡ Energy & mood <span class="tag">14 days</span></h2><svg class="chart" id="cEnergy"></svg>
+    <div class="legend"><span><i style="background:var(--acc)"></i>Energy AM</span><span><i style="background:#5fa8e6"></i>Energy PM</span><span><i style="background:var(--acc2)"></i>Mood</span><span><i style="background:var(--warm)"></i>Stress</span></div></div>
+  <div class="card"><h2>😴 Sleep <span class="tag">14 days</span></h2><svg class="chart" id="cSleep"></svg>
+    <div class="legend"><span><i style="background:var(--acc2)"></i>Hours</span><span><i style="background:var(--acc)"></i>Quality</span></div></div>
+  <div class="card"><h2>⚖️ Bodyweight <span class="tag">30 days</span></h2><svg class="chart" id="cWeight"></svg><div class="small muted" id="wSummary"></div></div>
+  <div class="card"><h2>📊 Habit hit-rate <span class="tag">14 days</span></h2><div id="hitRate"></div></div>
+</section>
+
+<!-- ═════════ SETTINGS ═════════ -->
+<section class="view" id="v-settings">
+  <div class="card">
+    <h2>🔑 Phoenix account</h2>
+    <div id="authBox"></div>
+  </div>
+  <div class="card">
+    <h2>🏁 Challenge</h2>
+    <div class="lbl"><span>Start date</span></div><input type="date" id="sStart">
+    <div class="row" style="margin-top:8px">
+      <div><div class="lbl"><span>Length (days)</span></div><input type="number" id="sLen" inputmode="numeric"></div>
+      <div><div class="lbl"><span>Water target (ml)</span></div><input type="number" id="sWater" inputmode="numeric" step="250"></div>
+    </div>
+    <div class="lbl"><span>Strict mode (75 Hard rules: a missed day offers a reset to Day 1)</span></div>
+    <select id="sStrict"><option value="0">Off — keep counting</option><option value="1">On</option></select>
+    <div class="row" style="margin-top:8px">
+      <div><div class="lbl"><span>Snacks / day</span></div><input type="number" id="sSnack" inputmode="numeric"></div>
+      <div><div class="lbl"><span>Walks / day</span></div><input type="number" id="sWalk" inputmode="numeric"></div>
+      <div><div class="lbl"><span>Pulses / day</span></div><input type="number" id="sPulse" inputmode="numeric"></div>
+    </div>
+    <div class="lbl"><span>"Ate to plan" auto-ticks when Phoenix kcal is within ± (kcal)</span></div>
+    <input type="number" id="sKcal" inputmode="numeric" step="50">
+  </div>
+  <div class="card">
+    <h2>✅ Daily ticks</h2>
+    <p class="small muted" style="margin:0 0 10px">Req = counts toward a perfect day. Auto-tick sources fill themselves from Phoenix or the app. You can still tick any item by hand.</p>
+    <div id="habEdit"></div>
+    <button class="btn sm" id="habAdd">+ Add tick</button>
+  </div>
+  <div class="card">
+    <h2>🎨 5Brains labels</h2>
+    <p class="small muted" style="margin:0 0 8px">Rename or reword to match your EPP assessment.</p>
+    <div id="brainEdit"></div>
+  </div>
+  <div class="card">
+    <h2>🧠 Reflection engine</h2>
+    <div class="lbl"><span>Endpoint (Anthropic Messages-compatible proxy)</span></div>
+    <input id="sAiUrl" placeholder="https://…">
+    <div class="lbl"><span>Model</span></div>
+    <input id="sAiModel">
+    <div class="lbl"><span>About me (context for reflections)</span></div>
+    <textarea id="sAbout" rows="4" placeholder="Anything from your 5 Brains assessment the reflections should know: strengths, watch-outs, goals."></textarea>
+    <div class="sp"></div>
+    <button class="btn sm" id="aiTest">Test connection</button> <span class="small muted" id="aiTestOut"></span>
+  </div>
+  <div class="card">
+    <h2>📄 Report</h2>
+    <div class="lbl"><span>Next session with Dave</span></div><input type="date" id="sReport">
+    <div class="sp"></div><button class="btn sm" data-report>Open report</button>
+  </div>
+  <div class="card">
+    <h2>💾 Data</h2>
+    <div class="row">
+      <button class="btn sm" id="expBtn">Export JSON</button>
+      <label class="btn sm" style="text-align:center">Import<input type="file" id="impIn" accept="application/json" hidden></label>
+      <button class="btn sm" id="syncBtn">Sync now</button>
+    </div>
+    <p class="small muted" id="verTxt" style="margin:10px 0 0"></p>
+  </div>
+</section>
+</main>
+
+<!-- recorder overlay -->
+<div class="rec" id="rec">
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn sm" style="flex:none" id="recClose">✕</button>
+    <div class="seg" id="recSeg"><button data-m="feelings">🫀 Feelings</button><button data-m="ideas">💡 Ideas</button></div>
+  </div>
+  <div class="hint" id="recPrompt"></div>
+  <textarea id="recTx" placeholder="Tap the mic and talk — or type, or use the 🎤 on your keyboard."></textarea>
+  <button class="mic" id="micBtn" aria-label="Record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+  <div class="hint" id="recHint"></div>
+  <div class="row" style="margin-top:10px">
+    <button class="btn" id="recSave">Save only</button>
+    <button class="btn pri" id="recReflect">Save & reflect</button>
+  </div>
+</div>
+
+<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI">✨ Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button></div><div class="rp" id="rp"></div></div>
+<div class="breathe" id="breathe"><div class="bt" id="bTxt">Ready</div><div class="orb" id="orb"></div><div class="muted" id="bCnt"></div><button class="btn" id="bStop">Stop</button></div>
+<!-- entry sheet -->
+<div class="sheet" id="sheet"><div class="in"><div class="bar"></div><div id="sheetBody"></div></div></div>
+<div class="sheet" id="ask" style="z-index:80;align-items:center"><div class="in" style="border-radius:18px;margin:0 20px;max-width:380px;padding:18px"><p id="askMsg" style="margin:0 0 16px;font-size:15px"></p><div class="row"><button class="btn" id="askNo">Cancel</button><button class="btn pri" id="askYes">OK</button></div></div></div>
+<div class="toast" id="toast"></div>
+
+<nav class="tabs">
+  <button class="on" data-v="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Today</button>
+  <button data-v="journal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Journal</button>
+  <button data-v="trends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Trends</button>
+  <button data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+var APP_VERSION = '1.2.2';
+
+// ───────────────────────── config ─────────────────────────
+var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_5iC8tqmf4TqhlbCwq7JYdg_QfJ4aDAV'; // public publishable key (same as Phoenix)
+var LS = 'fivebrains_v1';
+
+var DEFAULT_HABITS = [
+  {id:'am',      name:'Morning check-in',        auto:'am_checkin', req:true},
+  {id:'brains',  name:'5Brains check',           auto:'brains',     req:true},
+  {id:'weigh',   name:'Weigh in',                auto:'weighed',    req:true},
+  {id:'diary',   name:'Reviewed tomorrow\'s diary', auto:'none',   req:true},
+  {id:'pulse',   name:'Logged highs & lows',     auto:'pulse',      req:true},
+  {id:'walk',    name:'7-min walk',              auto:'walk',       req:true},
+  {id:'snack',   name:'Recovery snacks',         auto:'snack',      req:true},
+  {id:'breath',  name:'4-6 breathing',           auto:'breath',     req:true},
+  {id:'water',   name:'Hit water target',        auto:'water',      req:true},
+  {id:'food',    name:'Ate to plan',             auto:'food',       req:true},
+  {id:'train',   name:'Train (Phoenix session)', auto:'trained',    req:false},
+  {id:'journal', name:'Voice journal',           auto:'journal',    req:true},
+  {id:'sun',     name:'Horizon in view / outdoors', auto:'none',    req:false},
+  {id:'walktalk',name:'Walk-and-talk 1-on-1',    auto:'none',       req:false},
+  {id:'read',    name:'Read 10 pages',           auto:'none',       req:false},
+  {id:'noalc',   name:'No alcohol',              auto:'none',       req:true},
+  {id:'pm',      name:'Evening check-in',        auto:'pm_checkin', req:true}
+];
+var DEFAULT_BRAINS = [
+  {id:'red',    name:'Red',    color:'#e07a6e', job:'Threat & safety',        q:'Am I safe and settled — or on guard?'},
+  {id:'orange', name:'Orange', color:'#e89a5a', job:'Belonging & trust',      q:'Do I feel connected? Do I trust the people around me?'},
+  {id:'yellow', name:'Yellow', color:'#e6cf5c', job:'Sense-making & evidence', q:'Does what I\'m doing make sense? Do I have the facts?'},
+  {id:'blue',   name:'Blue',   color:'#5fa8e6', job:'Clarity & action',       q:'Am I clear on what\'s expected and what I\'m doing next?'},
+  {id:'pink',   name:'Pink',   color:'#e58fb8', job:'Agency & possibility',   q:'Do I have room to choose, adapt and create?'}
+];
+var AUTO_LABEL = {none:'Manual', am_checkin:'Morning check-in', pm_checkin:'Evening check-in', weighed:'Phoenix weigh-in', trained:'Phoenix session', water:'Water target', food:'Phoenix kcal', journal:'Journal entry', brains:'5Brains check', pulse:'Energy pulses', walk:'Walks', snack:'Snacks', breath:'Breathing'};
+var CONTEXTS=['Multi-stakeholder mtg','1-on-1','Deep work','Admin / email','Training','Commute','Family','Side venture','Break','Just woke'];
+var BLOCKS=[[4,7,'Early 4–7'],[7,10,'Morning 7–10'],[10,12,'Late am 10–12'],[12,14,'Midday 12–2'],[14,17,'Arvo 2–5'],[17,20,'Evening 5–8'],[20,28,'Night 8+']];
+function brisHour(iso){ var d=bris(new Date(iso)); return d.getHours()+d.getMinutes()/60; }
+function blockOf(iso){ var h=brisHour(iso); if(h<4) h+=24; for(var i=0;i<BLOCKS.length;i++) if(h>=BLOCKS[i][0]&&h<BLOCKS[i][1]) return BLOCKS[i][2]; return BLOCKS[6][2]; }
+function hhmm(iso){ var d=bris(new Date(iso)); return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); }
+function pulsesOn(k){ return S.entries.filter(function(e){return e.kind==='pulse'&&e.date===k&&!e._deleted;}).sort(function(a,b){return a.created_at<b.created_at?-1:1;}); }
+function rlog(k){ var d=day(k); if(!d.log) d.log={}; ['walk','snack','breath'].forEach(function(x){ if(!d.log[x]) d.log[x]=[]; }); if(!d.log.times) d.log.times={}; return d.log; }
+
+// ───────────────────────── state ─────────────────────────
+var S = load();
+function blank(){
+  return {
+    settings:{ start: todayKey(), len:75, water:3000, strict:false, kcalTol:150,
+      aiUrl:'https://phoenix-coach.jon-d87.workers.dev', aiModel:'claude-sonnet-4-5', reportDate:'2026-12-16', reportAI:null, snackT:3, walkT:1, pulseT:3,
+      about:'From my EPP 5Brains debrief (David Munro): Core theme is energy efficiency — performance = energy x capability; capability is constant, energy fluctuates. Goal: same or better outcome for less energy, finish with 20% in the tank. Observed: I read rooms well and build real relationships, but multi-stakeholder settings drain the battery (energy cost, not capability). I look calm on the surface while running high revs underneath — keeping the mask on for the team is a big drain. My goals reset upward mid-day so I finish feeling I missed. Focus 1: protect energy via the diary — review a day ahead, break up draining back-to-backs, follow heavy meetings with energising ones, walk-and-talk 1-on-1s when low. Focus 2: daily active recovery — 7-min walk, protein/carb snack 3-4x/day, regular water, horizon in view, 4-in/6-out breathing x4. Habits: log what precedes highs and lows; invite the team to flag when I look flat or at my best.' },
+    habits: JSON.parse(JSON.stringify(DEFAULT_HABITS)),
+    brains: JSON.parse(JSON.stringify(DEFAULT_BRAINS)),
+    days:{},      // date -> {sleep_hours,..., checks:{}, updated_at}
+    water:{},     // date -> {ml, log:[], updated_at, source}
+    weights:{},   // date -> kg (local weigh-ins)
+    phoenix:{},   // date -> accountability_day row
+    entries:[],   // {id,date,kind,transcript,analysis,created_at,updated_at,_dirty}
+    dirty:{days:{},water:{}},
+    lastSync:null
+  };
+}
+function load(){
+  try{ var s = JSON.parse(localStorage.getItem(LS)); if(s && s.settings){ var b = blank();
+    for(var k in b) if(!(k in s)) s[k]=b[k];
+    for(var k2 in b.settings) if(!(k2 in s.settings)) s.settings[k2]=b.settings[k2];
+    return s; } }catch(e){}
+  return blank();
+}
+var _saveT; function save(){ clearTimeout(_saveT); _saveT=setTimeout(function(){ try{localStorage.setItem(LS, JSON.stringify(S));}catch(e){toast('Storage full?');} },150); }
+
+// ───────────────────────── dates (Brisbane, UTC+10, no DST) ─────────────────────────
+function bris(d){ d=d||new Date(); return new Date(d.getTime() + d.getTimezoneOffset()*60000 + 10*3600000); }
+function key(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayKey(){ return key(bris()); }
+function addDays(k,n){ var p=k.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]+n); return key(d); }
+function diffDays(a,b){ var pa=a.split('-'),pb=b.split('-'); return Math.round((Date.UTC(+pb[0],+pb[1]-1,+pb[2])-Date.UTC(+pa[0],+pa[1]-1,+pa[2]))/864e5); }
+function niceDate(k){ var p=k.split('-'); var d=new Date(+p[0],+p[1]-1,+p[2]); return d.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}); }
+function uuid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c=='x'?r:(r&3|8)).toString(16);})); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function day(k){ k=k||todayKey(); if(!S.days[k]) S.days[k]={checks:{}}; if(!S.days[k].checks) S.days[k].checks={}; return S.days[k]; }
+function touchDay(k){ k=k||todayKey(); var d=day(k); d.updated_at=new Date().toISOString(); d.perfect_day = isPerfect(k); S.dirty.days[k]=1; save(); queueSync(); }
+
+// ───────────────────────── habit logic ─────────────────────────
+function waterMl(k){ var w=S.water[k]; return w?(+w.ml||0):0; }
+function autoVal(h,k){
+  var d=S.days[k]||{}, ph=S.phoenix[k];
+  switch(h.auto){
+    case 'am_checkin': return !!(d.energy_am && d.sleep_quality && d.sleep_hours);
+    case 'pm_checkin': return !!(d.energy_pm && d.mood && d.stress);
+    case 'weighed': return !!(S.weights[k] || (ph && ph.weighed_in));
+    case 'trained': return !!(ph && ph.trained);
+    case 'water': return waterMl(k) >= (+S.settings.water||3000);
+    case 'food': return !!(ph && ph.kcal!=null && ph.target_kcal!=null && Math.abs(ph.kcal-ph.target_kcal) <= (+S.settings.kcalTol||150));
+    case 'brains': var bb=d.brains||{}; return S.brains.every(function(b){return bb[b.id];});
+    case 'journal': return S.entries.some(function(e){return e.date===k && (e.kind==='feelings'||e.kind==='ideas') && !e._deleted;});
+    case 'pulse': return pulsesOn(k).length >= (+S.settings.pulseT||3);
+    case 'walk': return ((d.log&&d.log.walk)||[]).length >= (+S.settings.walkT||1);
+    case 'snack': return ((d.log&&d.log.snack)||[]).length >= (+S.settings.snackT||3);
+    case 'breath': return ((d.log&&d.log.breath)||[]).length >= 1;
+  }
+  return false;
+}
+function habitDone(h,k){ var d=S.days[k]; return autoVal(h,k) || !!(d && d.checks && d.checks[h.id]); }
+function isPerfect(k){ var req=S.habits.filter(function(h){return h.req;}); if(!req.length) return false; return req.every(function(h){return habitDone(h,k);}); }
+function hasAnyData(k){ return !!(S.days[k] || S.water[k] || S.weights[k] || (S.phoenix[k] && (S.phoenix[k].trained||S.phoenix[k].weighed_in))); }
+function streak(){
+  var t=todayKey(), n=0, k=isPerfect(t)?t:addDays(t,-1);
+  while(isPerfect(k) && n<1000){ n++; k=addDays(k,-1); }
+  return n;
+}
+function dayNum(){ return diffDays(S.settings.start, todayKey())+1; }
+
+// ───────────────────────── UI helpers ─────────────────────────
+function $(s,r){ return (r||document).querySelector(s); }
+function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+// In-app confirm: native dialogs are suppressed in iOS home-screen apps
+function ask(msg, yes){ return new Promise(function(res){ var m=$('#ask'); $('#askMsg').textContent=msg; $('#askYes').textContent=yes||'OK'; m.classList.add('on');
+  function done(v){ m.classList.remove('on'); $('#askYes').onclick=$('#askNo').onclick=null; res(v); }
+  $('#askYes').onclick=function(){done(true);}; $('#askNo').onclick=function(){done(false);}; }); }
+var _tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('on');},2200); }
+
+function renderHeader(){
+  var n=dayNum(), L=+S.settings.len||75;
+  $('#hDay').innerHTML = (n<1?'Starts '+esc(niceDate(S.settings.start)):'Day '+n+'<small>/ '+L+'</small>');
+  $('#hDate').textContent = niceDate(todayKey());
+  $('#hStreak').textContent = streak();
+  var sb=$('#strictBanner'); sb.innerHTML='';
+  if(S.settings.strict && n>1){
+    var y=addDays(todayKey(),-1);
+    if(diffDays(S.settings.start,y)>=0 && !isPerfect(y)){
+      sb.innerHTML='<div class="banner">Strict mode: yesterday wasn\'t a perfect day. <button class="btn sm" id="resetBtn" style="margin-left:6px">Restart at Day 1</button> <button class="btn sm" id="fixBtn">Fix yesterday</button></div>';
+      $('#resetBtn').onclick=async function(){ if(await ask('Restart the challenge from today?','Restart')){ S.settings.start=todayKey(); save(); renderAll(); toast('Day 1. Go.'); } };
+      $('#fixBtn').onclick=function(){ openDayEditor(y); };
+    }
+  }
+}
+
+function buildScales(){
+  $$('.scale[data-k]').forEach(function(el){
+    if(el.children.length) return;
+    for(var i=1;i<=10;i++){ var b=document.createElement('button'); b.textContent=i; b.dataset.v=i; el.appendChild(b); }
+    el.addEventListener('click',function(e){
+      var v=+e.target.dataset.v; if(!v) return; var k=el.dataset.k, d=day();
+      d[k] = (d[k]===v) ? null : v; if(/^energy_|^mood$|^stress$|^focus$/.test(k)){ rlog().times[k]=new Date().toISOString(); } touchDay(); renderToday();
+    });
+  });
+}
+
+function renderToday(){
+  var k=todayKey(), d=day(k), ph=S.phoenix[k];
+  // scales
+  $$('#v-today .scale').forEach(function(el){ var v=d[el.dataset.k]; $$('button',el).forEach(function(b){ b.classList.toggle('on', +b.dataset.v===v); }); });
+  $$('#v-today [data-show]').forEach(function(el){ var v=d[el.dataset.show]; el.textContent = v?v+'/10':'–'; });
+  $$('#v-today [data-t]').forEach(function(el){ if(document.activeElement!==el) el.value = d[el.dataset.t]||''; });
+  var si=$('#slpIn'); if(document.activeElement!==si) si.value = d.sleep_hours!=null?d.sleep_hours:'';
+  $('#slpV').textContent = d.sleep_hours!=null ? d.sleep_hours+' h' : '–';
+  setTag('#amTag', autoVal({auto:'am_checkin'},k));
+  setTag('#pmTag', autoVal({auto:'pm_checkin'},k));
+  // water
+  var ml=waterMl(k), tg=+S.settings.water||3000;
+  $('#wtBar').style.width = Math.min(100, ml/tg*100)+'%';
+  $('#wtTxt').textContent = Math.round(ml)+' / '+tg+' ml';
+  var ws=S.water[k]; $('#wtSrc').textContent = ws && ws.source==='phoenix' ? 'synced from Phoenix' : '';
+  setTag('#wtTag', ml>=tg);
+  // habits
+  var box=$('#habits'); box.innerHTML='';
+  var req=0, reqDone=0;
+  S.habits.forEach(function(h){
+    var auto=autoVal(h,k), done=habitDone(h,k); if(h.req){req++; if(done) reqDone++;}
+    var b=document.createElement('button'); b.className='hab'+(done?' done':'');
+    b.innerHTML='<span class="box">'+(done?'✓':'')+'</span><span class="nm">'+esc(h.name)+'</span>'+
+      (h.auto!=='none'?'<span class="src">'+(auto?'auto':'')+'</span>':'')+(h.req?'':'<span class="req">bonus</span>');
+    b.onclick=function(){ if(auto){ toast('Auto-ticked from '+AUTO_LABEL[h.auto]); return; } d.checks[h.id]=!d.checks[h.id]; touchDay(); renderToday(); renderHeader(); };
+    box.appendChild(b);
+  });
+  var tk=$('#tkTag'); tk.textContent=reqDone+'/'+req; tk.className='tag'+(req&&reqDone===req?' ok':'');
+  renderPhoenix(); renderBrains(); renderPulse(); renderRecovery();
+  $$('[data-yn]').forEach(function(g){ var v=d[g.dataset.yn]; $$('button',g).forEach(function(b){ b.classList.toggle('on', v!=null && (b.dataset.v==='1')===v); }); });
+  // today's entries
+  var te=S.entries.filter(function(e){return e.date===k && !e._deleted;});
+  $('#todayEntries').innerHTML = te.filter(function(e){return e.kind!=='pulse';}).map(entryRow).join('');
+  bindEntryRows($('#todayEntries'));
+}
+function renderBrains(){
+  var d=day(), bb=d.brains||(d.brains={}), box=$('#brainRows'); box.innerHTML='';
+  S.brains.forEach(function(b){
+    var w=document.createElement('div');
+    w.innerHTML='<div class="brain"><span class="dot" style="background:'+b.color+'"></span><div class="q"><b>'+esc(b.name)+' · '+esc(b.job)+'</b><span class="muted">'+esc(b.q)+'</span></div><span class="val">'+(bb[b.id]?bb[b.id]+'/10':'–')+'</span></div><div class="scale b"></div>';
+    var sc=$('.scale',w);
+    for(var i=1;i<=10;i++){ var bt=document.createElement('button'); bt.textContent=i; bt.dataset.v=i; if(bb[b.id]===i){ bt.classList.add('on'); bt.style.background=b.color; bt.style.borderColor=b.color; } sc.appendChild(bt); }
+    sc.onclick=function(e){ var v=+e.target.dataset.v; if(!v) return; bb[b.id]= bb[b.id]===v?null:v; touchDay(); renderToday(); renderHeader(); };
+    box.appendChild(w);
+  });
+  setTag('#bTag', autoVal({auto:'brains'},todayKey()));
+}
+var PUL={e:null,r:null,ctx:null};
+function renderPulse(){
+  [['#pEs','e','#pE'],['#pRs','r','#pR']].forEach(function(x){ var el=$(x[0]); if(!el.children.length){ for(var i=1;i<=10;i++){ var b=document.createElement('button'); b.textContent=i; b.dataset.v=i; el.appendChild(b);} el.onclick=function(ev){ var v=+ev.target.dataset.v; if(!v) return; PUL[x[1]]=PUL[x[1]]===v?null:v; renderPulse(); }; }
+    $$('button',el).forEach(function(b){ b.classList.toggle('on',+b.dataset.v===PUL[x[1]]); }); $(x[2]).textContent=PUL[x[1]]?PUL[x[1]]+'/10':'–'; });
+  var c=$('#pCtx'); if(!c.children.length){ CONTEXTS.forEach(function(t){ var b=document.createElement('button'); b.textContent=t; b.onclick=function(){ PUL.ctx=PUL.ctx===t?null:t; renderPulse(); }; c.appendChild(b); }); }
+  $$('button',c).forEach(function(b){ b.classList.toggle('on',b.textContent===PUL.ctx); });
+  var ps=pulsesOn(todayKey()); $('#plTag').textContent=ps.length+'/'+(+S.settings.pulseT||3); $('#plTag').className='tag'+(ps.length>=(+S.settings.pulseT||3)?' ok':'');
+  $('#pList').innerHTML=ps.slice().reverse().map(function(e){ var a=e.analysis||{}; return '<div class="pl"><span class="tm">'+hhmm(e.created_at)+'</span><span class="e">⚡'+(a.energy||'–')+(a.revs?' <span style="color:var(--warm)">↑'+a.revs+'</span>':'')+'</span><span class="n">'+esc([a.context,e.transcript].filter(Boolean).join(' · '))+'</span></div>'; }).join('');
+}
+function logPulse(){
+  if(!PUL.e){ toast('Tap an energy score first'); return; }
+  var now=new Date().toISOString(), note=$('#pNote').value.trim();
+  S.entries.unshift({id:uuid(),date:todayKey(),kind:'pulse',transcript:note,analysis:{energy:PUL.e,revs:PUL.r,context:PUL.ctx,block:blockOf(now)},created_at:now,updated_at:now,_dirty:true});
+  PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
+}
+function renderRecovery(){
+  var L=rlog(todayKey()), t={walk:+S.settings.walkT||1,snack:+S.settings.snackT||3,breath:1}, met=0;
+  ['walk','snack','breath'].forEach(function(x){ var n=L[x].length; $('#rc-'+x).textContent=n; $('#rt-'+x).textContent=n?'last '+hhmm(L[x][n-1]):'target '+t[x]; $('[data-r='+x+']').classList.toggle('met',n>=t[x]); if(n>=t[x]) met++; });
+  $('#rcTag').textContent=met+'/3'; $('#rcTag').className='tag'+(met===3?' ok':'');
+}
+function addRecovery(x){ rlog(todayKey())[x].push(new Date().toISOString()); touchDay(); renderToday(); renderHeader(); }
+var BR={on:false,t:null};
+function startBreathing(){
+  var o=$('#breathe'), orb=$('#orb'), tx=$('#bTxt'), cnt=$('#bCnt'), cyc=0; o.classList.add('on'); BR.on=true;
+  function inhale(){ if(!BR.on) return; if(cyc>=4){ tx.textContent='Done 👊'; orb.style.transform='scale(1)'; addRecovery('breath'); BR.t=setTimeout(function(){o.classList.remove('on');BR.on=false;},1200); return; }
+    cyc++; cnt.textContent='Cycle '+cyc+' of 4'; tx.textContent='Breathe in · 4'; orb.style.transitionDuration='4s'; orb.style.transform='scale(1.8)'; BR.t=setTimeout(exhale,4000); }
+  function exhale(){ if(!BR.on) return; tx.textContent='Breathe out · 6'; orb.style.transitionDuration='6s'; orb.style.transform='scale(1)'; BR.t=setTimeout(inhale,6000); }
+  orb.style.transform='scale(1)'; tx.textContent='Get ready'; BR.t=setTimeout(inhale,1200);
+}
+function setTag(sel, ok){ var t=$(sel); t.textContent= ok?'done':'open'; t.className='tag'+(ok?' ok':''); }
+
+function renderPhoenix(){
+  var k=todayKey(), ph=S.phoenix[k], st=$('#phStatus');
+  if(!SB || !SESSION){ st.textContent='not signed in'; st.className='tag warn'; }
+  else { st.textContent = S.lastSync ? 'synced '+new Date(S.lastSync).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}) : 'syncing'; st.className='tag ok'; }
+  var w = S.weights[k] || (ph && ph.weight_kg);
+  var trained = ph && ph.trained ? esc(ph.session_name||'Done') : null;
+  var kc = ph && ph.kcal!=null ? Math.round(ph.kcal)+(ph.target_kcal!=null?' / '+Math.round(ph.target_kcal):'') : null;
+  var pr = ph && ph.protein_g!=null ? Math.round(ph.protein_g)+'g'+(ph.target_protein_g!=null?' / '+Math.round(ph.target_protein_g):'') : null;
+  var cells = [
+    ['Session', trained, 'not yet'],
+    ['Weight', w?(+w).toFixed(1)+' kg':null, 'not yet'],
+    ['Sets', ph && ph.trained ? (ph.sets_logged||'syncing') : null, '–'],
+    ['kcal', kc, 'no data'],
+    ['Protein', pr, 'no data'],
+    ['Water', waterMl(k)? (waterMl(k)/1000).toFixed(2)+' L':null, '0 L']
+  ];
+  $('#phGrid').innerHTML = cells.map(function(c){ return '<div><div class="k">'+c[0]+'</div><div class="v'+(c[1]==null?' none':'')+'">'+(c[1]==null?c[2]:c[1])+'</div></div>'; }).join('');
+}
+
+// ───────────────────────── today bindings ─────────────────────────
+function bindToday(){
+  buildScales();
+  $$('#v-today [data-t]').forEach(function(el){ el.addEventListener('input',function(){ day()[el.dataset.t]=el.value; touchDay(); }); });
+  $('#slpIn').addEventListener('input',function(){ var v=parseFloat(this.value); day().sleep_hours = isFinite(v)?v:null; touchDay(); $('#slpV').textContent=isFinite(v)?v+' h':'–'; renderHabitsOnly(); });
+  $$('[data-slp]').forEach(function(b){ b.onclick=function(){ var d=day(); var v=(d.sleep_hours!=null?d.sleep_hours:7)+parseFloat(b.dataset.slp); d.sleep_hours=Math.max(0,Math.min(14,Math.round(v*4)/4)); touchDay(); renderToday(); }; });
+  $$('[data-w]').forEach(function(b){ b.onclick=function(){
+    var k=todayKey(); var w=S.water[k]||(S.water[k]={ml:0,log:[]}); if(!w.log) w.log=[];
+    if(b.dataset.w==='undo'){ var a=w.log.pop()||0; w.ml=Math.max(0,(+w.ml||0)-a); } else { var amt=+b.dataset.w; w.ml=(+w.ml||0)+amt; w.log.push(amt); }
+    w.updated_at=new Date().toISOString(); w.source='five-brains'; S.dirty.water[k]=1; touchDay(k); renderToday(); renderHeader();
+  }; });
+  $('#wBtn').onclick=logWeight;
+  $('#pLog').onclick=logPulse;
+  $$('[data-r]').forEach(function(b){ var x=b.dataset.r, lp=null, fired=false;
+    b.addEventListener('touchstart',function(){ fired=false; lp=setTimeout(function(){ fired=true; var L=rlog(todayKey())[x]; if(L.length) ask('Remove the last '+x+'?','Remove').then(function(ok){ if(ok){ L.pop(); touchDay(); renderToday(); } }); },600); },{passive:true});
+    b.addEventListener('touchend',function(){ clearTimeout(lp); });
+    b.onclick=function(){ if(fired){fired=false;return;} if(x==='breath') startBreathing(); else { addRecovery(x); toast(x==='walk'?'Walk logged — get the horizon in view':'Snack logged'); } }; });
+  $('#bStop').onclick=function(){ BR.on=false; clearTimeout(BR.t); $('#breathe').classList.remove('on'); };
+  $$('[data-yn]').forEach(function(g){ g.onclick=function(e){ var v=e.target.dataset.v; if(v==null) return; var d=day(), k=g.dataset.yn, nv=v==='1'; d[k]= d[k]===nv?null:nv; touchDay(); renderToday(); }; });
+  $$('[data-rec]').forEach(function(b){ b.onclick=function(){ openRec(b.dataset.rec); }; });
+}
+function renderHabitsOnly(){ renderToday(); renderHeader(); }
+
+async function logWeight(){
+  var v=parseFloat($('#wIn').value); if(!isFinite(v)||v<30||v>300){ toast('Enter a weight in kg'); return; }
+  var k=todayKey(); S.weights[k]=v; touchDay(k); $('#wIn').value=''; renderToday(); renderHeader();
+  if(SB && SESSION){
+    var r = await SB.from('daily_weigh_ins').upsert({user_id:SESSION.user.id, date:k, weight_kg:v, logged_at:new Date().toISOString()},{onConflict:'user_id,date'});
+    if(r.error){ toast('Saved here — Phoenix write failed'); console.warn(r.error); } else toast('Weight sent to Phoenix');
+  } else toast('Saved — sign in to send to Phoenix');
+}
+
+// ───────────────────────── voice recorder ─────────────────────────
+var REC={mode:'feelings', live:false, sr:null, base:''};
+var PROMPTS={
+  feelings:['How are you actually feeling right now — and where do you feel it?','What\'s taking up the most headspace today?','What happened today that you\'re still carrying?','What would you tell a mate who felt like you do?'],
+  ideas:['What\'s the idea, in one breath?','Who is it for, and what problem does it kill?','What would the smallest test look like this week?','Why now — what\'s changed?']
+};
+function openRec(mode){ REC.mode=mode||'feelings'; $('#recTx').value=''; setRecMode(REC.mode); $('#rec').classList.add('on'); $('#recHint').textContent = SR_OK?'Tap the mic to start talking':'Live transcription isn\'t available in this mode — tap the text box and use the 🎤 on your keyboard.'; }
+function setRecMode(m){ REC.mode=m; $$('#recSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m);}); var p=PROMPTS[m]; $('#recPrompt').textContent='Prompt: '+p[Math.floor(Math.random()*p.length)]; }
+function closeRec(){ stopMic(); $('#rec').classList.remove('on'); }
+var SRC = window.SpeechRecognition || window.webkitSpeechRecognition; var SR_OK = !!SRC;
+function startMic(){
+  if(!SR_OK){ $('#recTx').focus(); return; }
+  var sr=new SRC(); sr.lang='en-AU'; sr.continuous=true; sr.interimResults=true;
+  REC.base = $('#recTx').value; if(REC.base && !/\s$/.test(REC.base)) REC.base+=' ';
+  sr.onresult=function(ev){
+    var fin='', interim='';
+    for(var i=ev.resultIndex;i<ev.results.length;i++){ var t=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin+=t; else interim+=t; }
+    if(fin){ REC.base += fin.trim()+' '; }
+    $('#recTx').value = REC.base + interim;
+  };
+  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ REC.live=false; uiMic(); $('#recHint').textContent='Mic blocked. Use the 🎤 on your keyboard instead.'; } };
+  sr.onend=function(){ if(REC.live){ try{ REC.base=$('#recTx').value; if(REC.base && !/\s$/.test(REC.base)) REC.base+=' '; sr.start(); }catch(e){ REC.live=false; uiMic(); } } };
+  try{ sr.start(); REC.sr=sr; REC.live=true; uiMic(); $('#recHint').textContent='Listening… tap to pause'; }
+  catch(e){ $('#recHint').textContent='Couldn\'t start the mic. Use the keyboard 🎤.'; }
+}
+function stopMic(){ REC.live=false; if(REC.sr){ try{REC.sr.stop();}catch(e){} REC.sr=null; } uiMic(); if($('#rec').classList.contains('on')) $('#recHint').textContent= SR_OK?'Paused — tap to keep going':''; }
+function uiMic(){ $('#micBtn').classList.toggle('live',REC.live); }
+function bindRec(){
+  $('#recClose').onclick=async function(){ if($('#recTx').value.trim() && !(await ask('Discard this entry?','Discard'))) return; closeRec(); };
+  $$('#recSeg button').forEach(function(b){ b.onclick=function(){ setRecMode(b.dataset.m); }; });
+  $('#micBtn').onclick=function(){ REC.live?stopMic():startMic(); };
+  $('#recSave').onclick=function(){ saveEntry(false); };
+  $('#recReflect').onclick=function(){ saveEntry(true); };
+}
+function saveEntry(reflect){
+  stopMic(); var tx=$('#recTx').value.trim(); if(tx.length<3){ toast('Nothing to save yet'); return; }
+  var now=new Date().toISOString();
+  var e={id:uuid(), date:todayKey(), kind:REC.mode, transcript:tx, analysis:null, created_at:now, updated_at:now, _dirty:true};
+  S.entries.unshift(e); touchDay(); closeRec(); renderAll(); toast('Saved');
+  if(reflect) reflectEntry(e.id);
+}
+
+// ───────────────────────── reflection (Claude via proxy) ─────────────────────────
+function ctxFor(k){
+  var d=S.days[k]||{}, ph=S.phoenix[k]||{}, L=d.log||{};
+  return { date:k, weekday: niceDate(k).split(' ')[0], challenge_day: diffDays(S.settings.start,k)+1,
+    energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:a.context||null, preceded_by:e.transcript||null}; }),
+    recovery: { walks:(L.walk||[]).map(hhmm), snacks:(L.snack||[]).map(hhmm), breathing:(L.breath||[]).map(hhmm) },
+    checkin_times: Object.keys(L.times||{}).reduce(function(o,x){ o[x]=hhmm(L.times[x]); return o; },{}),
+    goalposts_moved: d.goal_moved==null?null:d.goal_moved, hit_original_target: d.hit_target==null?null:d.hit_target,
+    sleep_hours:d.sleep_hours, sleep_quality:d.sleep_quality, energy_am:d.energy_am, energy_pm:d.energy_pm, mood:d.mood, stress:d.stress, focus:d.focus,
+    five_brains: S.brains.reduce(function(o,b){ o[b.name+' ('+b.job+')']=(d.brains&&d.brains[b.id])||null; return o; },{}),
+    intention:d.intention||null, win:d.win||null, gratitude:d.gratitude||null,
+    ticks_done: S.habits.filter(function(h){return habitDone(h,k);}).map(function(h){return h.name;}),
+    ticks_missed: S.habits.filter(function(h){return h.req && !habitDone(h,k);}).map(function(h){return h.name;}),
+    water_ml: waterMl(k)||null,
+    phoenix:{ trained: ph.trained===undefined?null:(k===todayKey() && !ph.trained ? 'not yet (day still open)' : ph.trained), session: ph.session_name||null, weight_kg: S.weights[k]||ph.weight_kg||null, kcal: ph.kcal==null?'no data':ph.kcal, target_kcal: ph.target_kcal==null?'no data':ph.target_kcal } };
+}
+var SYS_BASE = 'You are reviewing a private journal for Jon, a Brisbane-based food & beverage product developer who trains 4x/week, is building his own app ventures on the side, and is working through the 5Brains performance model (Executive Performance Partners). ';
+function brainsLens(){ return 'THE 5BRAINS LENS — assess everything against these five cognitive jobs (each also scored 1-10 by Jon daily, 10 = well-served): '+S.brains.map(function(b){return b.name+'Brain = '+b.job+' ("'+b.q+'")';}).join('; ')+'. Identify which brain is driving, which is under-served or over-firing, and what would bring the system back into balance. Use the brain names exactly as given. '; }
+var PROMPT_FEEL = SYS_BASE + 'Respond as an experienced, warm but direct performance psychologist doing reflective practice. Frameworks, in priority order: (1) the 5Brains lens; (2) energy management (Loehr & Schwartz: physical, emotional, mental, purpose energy — identify what drained and what charged); (3) CBT thinking patterns; (4) ACT — especially the gap between the calm face shown and the revs underneath (the mask), and defusion from moving-goalpost thinking; (5) Lazarus stress appraisal — did this land as threat or challenge; (6) self-determination needs (autonomy, competence, relatedness); (7) emotional granularity — name feelings precisely. Always consider WHEN this was recorded (time of day, what preceded it, recent pulses, recovery done or skipped) — the time-of-day pattern is a core goal. This is reflection, not diagnosis — never label disorders. Be specific to what he actually said; quote short phrases as evidence. Name thinking patterns (e.g. all-or-nothing, catastrophising, mind-reading, should-statements) only where the words genuinely show them. Link to sleep/energy/training data when it plausibly explains something. Keep each field tight. If there is any indication of self-harm, suicidal thinking or being unsafe, set risk_flag true and write a caring risk_note encouraging him to contact Lifeline 13 11 14 or 000.\nReturn ONLY JSON: {"summary":"2-3 sentences","five_brains":{"driving":"brain name","read":[{"brain":"name","state":"over-firing|under-served|balanced|quiet","evidence":"short"}],"rebalance":"one sentence"},"emotions":[{"name":"","intensity":1-10}],"themes":[""],"thinking_patterns":[{"pattern":"","evidence":"short quote","challenge":"gentle counter-question or alternative view"}],"needs":[""],"strengths":[""],"body_link":"how sleep/energy/training/food/recovery may be feeding in, or null","energy_ledger":{"drains":[""],"chargers":[""]},"mask_gap":"comment on surface-calm vs revs-underneath if relevant, else null","appraisal":"threat|challenge|mixed","timing":"what the time of day and lead-up suggest","reframe":"","one_action":"one small concrete action for the next 24h","question":"one question to sit with","risk_flag":false,"risk_note":null}';
+var PROMPT_IDEA = SYS_BASE + 'Respond as a sharp, honest product strategist and thinking partner. Turn the rambling voice note into a crisp idea brief. Note the time of day and his energy state when the idea came — this feeds a map of his best creative windows. Be candid about weaknesses. Note how it connects to his other ventures or earlier ideas if relevant, and whether it competes for his limited time.\nReturn ONLY JSON: {"title":"","summary":"2 sentences","brains_check":[{"brain":"name","verdict":"how this idea looks through that brain (e.g. Red: what threat or risk does it trigger; Yellow: is there evidence; Blue: is the next action clear; Orange: who needs to trust it; Pink: what possibility it opens)"}],"core_insight":"","who_for":"","assumptions":[""],"risks":[""],"next_step":"smallest test this week","effort":"low|medium|high","excitement_vs_evidence":"one line on whether the energy is backed by evidence","captured_when":"time block + energy state at capture","connections":[""],"tags":[""]}';
+var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nReturn ONLY JSON: {"headline":"one line","time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
+
+async function callClaude(prompt, payload){
+  var body = { model:S.settings.aiModel, max_tokens:2000,
+    messages:[{role:'user', content: brainsLens() + prompt + (S.settings.about ? '\n\nAbout Jon (from his 5 Brains assessment): '+S.settings.about : '') + '\n\nDATA:\n' + JSON.stringify(payload)}] };
+  var r = await fetch(S.settings.aiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('Reflection service returned '+r.status);
+  var j = await r.json(); var t=(j.content&&j.content[0]&&j.content[0].text)||'';
+  var m=t.match(/\{[\s\S]*\}/); if(!m) throw new Error('No JSON in reply');
+  return JSON.parse(m[0]);
+}
+async function reflectEntry(id){
+  var e=S.entries.find(function(x){return x.id===id;}); if(!e) return;
+  e._busy=true; renderAll(); if(SHEET_ID===id) openEntry(id);
+  try{
+    var recent=S.entries.filter(function(x){return x.id!==id && x.kind===e.kind && !x._deleted && x.analysis;}).slice(0,3)
+      .map(function(x){return {date:x.date, time:hhmm(x.created_at), summary:x.analysis.summary||x.analysis.title};});
+    var a = await callClaude(e.kind==='ideas'?PROMPT_IDEA:PROMPT_FEEL, {entry:e.transcript, recorded_at:hhmm(e.created_at)+' ('+blockOf(e.created_at)+')', day:ctxFor(e.date), recent_entries:recent});
+    e.analysis=a; e.updated_at=new Date().toISOString(); e._dirty=true; save(); queueSync(); toast('Reflection ready');
+    openEntry(id);
+  }catch(err){ toast(err.message); console.warn(err); }
+  e._busy=false; renderAll(); if(SHEET_ID===id) openEntry(id);
+}
+async function runWeekly(){
+  var b=$('#weeklyBtn'); b.disabled=true; b.innerHTML='<span class="spin"></span> Reviewing…';
+  try{
+    var t=todayKey(), days=[];
+    for(var i=6;i>=0;i--) days.push(ctxFor(addDays(t,-i)));
+    var since=addDays(t,-6);
+    var ents=S.entries.filter(function(e){return e.date>=since && (e.kind==='feelings'||e.kind==='ideas') && !e._deleted;}).map(function(e){return {date:e.date,time:hhmm(e.created_at),block:blockOf(e.created_at),kind:e.kind,text:e.transcript.slice(0,1500),reflection:e.analysis?(e.analysis.summary||e.analysis.title):null};});
+    var a=await callClaude(PROMPT_WEEK,{days:days, entries:ents, time_of_day_summary:todSummary(30)});
+    var now=new Date().toISOString();
+    var e={id:uuid(),date:t,kind:'weekly',transcript:'Weekly review '+niceDate(since)+' – '+niceDate(t),analysis:a,created_at:now,updated_at:now,_dirty:true};
+    S.entries.unshift(e); save(); queueSync(); renderAll(); openEntry(e.id);
+  }catch(err){ toast(err.message); }
+  b.disabled=false; b.textContent='Run weekly review';
+}
+
+// ───────────────────────── entries UI ─────────────────────────
+var ICON={feelings:'🫀',ideas:'💡',weekly:'🧭',pulse:'⚡'};
+function entryRow(e){
+  if(e.kind==='pulse'){ var pa=e.analysis||{}; return '<button class="ent" data-id="'+e.id+'"><div class="t">⚡ <span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span><span class="tag">'+esc(pa.block||'')+'</span></div><p>Energy '+(pa.energy||'–')+(pa.revs?' · revs '+pa.revs:'')+(pa.context?' · '+esc(pa.context):'')+(e.transcript?' — '+esc(e.transcript):'')+'</p></button>'; }
+  var a=e.analysis, title = e.kind==='ideas' && a && a.title ? a.title : (e.kind==='weekly'&&a?a.headline: (a&&a.summary? a.summary : e.transcript));
+  var tag = e._busy?'<span class="tag"><span class="spin"></span></span>' : (a?'<span class="tag ok">reflected</span>':'<span class="tag">raw</span>');
+  return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ICON[e.kind]+' <span class="small muted">'+esc(niceDate(e.date))+'</span>'+tag+'</div><p>'+esc(title)+'</p></button>';
+}
+function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
+function renderJournal(){
+  var f=$('#jFilter').value;
+  var list=S.entries.filter(function(e){return !e._deleted && (f==='all'?e.kind!=='pulse':e.kind===f);});
+  $('#entryList').innerHTML = list.length? list.map(entryRow).join('') : '<p class="muted" style="text-align:center;margin-top:30px">No entries yet. Tap Feelings or Ideas and talk.</p>';
+  bindEntryRows($('#entryList'));
+}
+function li(arr){ return arr&&arr.length?'<ul>'+arr.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'<p class="muted">–</p>'; }
+function brainColor(n){ n=String(n||'').toLowerCase(); var b=S.brains.find(function(x){return n.indexOf(x.name.toLowerCase())===0||n.indexOf(x.id)===0;}); return b?b.color:'var(--acc2)'; }
+function fiveBrainsHTML(fb){ if(!fb) return ''; var h='<h3>5Brains read</h3>';
+  if(fb.driving) h+='<p>Driving: <b style="color:'+brainColor(fb.driving)+'">'+esc(fb.driving)+'</b></p>';
+  if(fb.strongest) h+='<p>Strongest: <b style="color:'+brainColor(fb.strongest)+'">'+esc(fb.strongest)+'</b> · Weakest: <b style="color:'+brainColor(fb.weakest)+'">'+esc(fb.weakest)+'</b></p>';
+  if(fb.trend) h+='<p>'+esc(fb.trend)+'</p>';
+  (fb.read||[]).forEach(function(r){ h+='<div class="callout" style="border-color:'+brainColor(r.brain)+'"><b>'+esc(r.brain)+'</b> <span class="tag">'+esc(r.state)+'</span><div class="small muted" style="margin-top:3px">'+esc(r.evidence)+'</div></div>'; });
+  if(fb.rebalance) h+='<div class="callout w"><b>Rebalance:</b> '+esc(fb.rebalance)+'</div>';
+  return h; }
+function analysisHTML(e){
+  var a=e.analysis; if(!a) return '';
+  var h='';
+  if(e.kind==='feelings'){
+    if(a.risk_flag) h+='<div class="crisis"><b>Looking out for you.</b><p style="margin:6px 0">'+esc(a.risk_note||'If things feel heavy or unsafe, please reach out now.')+'</p><a class="btn sm" href="tel:131114">Call Lifeline 13 11 14</a> <a class="btn sm" href="sms:0477131114">Text 0477 13 11 14</a></div>';
+    h+='<h3>Summary</h3><p>'+esc(a.summary)+'</p>'+fiveBrainsHTML(a.five_brains);
+    if(a.emotions&&a.emotions.length) h+='<h3>Emotions</h3><div class="chips">'+a.emotions.map(function(x){return '<span class="chip">'+esc(x.name)+(x.intensity?' · '+esc(x.intensity):'')+'</span>';}).join('')+'</div>';
+    if(a.themes&&a.themes.length) h+='<h3>Themes</h3><div class="chips">'+a.themes.map(function(x){return '<span class="chip">'+esc(x)+'</span>';}).join('')+'</div>';
+    if(a.thinking_patterns&&a.thinking_patterns.length){ h+='<h3>Thinking patterns</h3>'+a.thinking_patterns.map(function(p){return '<div class="callout"><b>'+esc(p.pattern)+'</b>'+(p.evidence?'<div class="small muted">“'+esc(p.evidence)+'”</div>':'')+'<div style="margin-top:4px">'+esc(p.challenge)+'</div></div>';}).join(''); }
+    if(a.body_link) h+='<h3>Body ↔ mind</h3><p>'+esc(a.body_link)+'</p>';
+    if(a.timing) h+='<h3>Timing</h3><p>'+esc(a.timing)+'</p>';
+    if(a.energy_ledger) h+='<h3>Energy ledger</h3><div class="row" style="align-items:flex-start"><div><div class="small" style="color:var(--red)">Drains</div>'+li(a.energy_ledger.drains)+'</div><div><div class="small" style="color:var(--ok)">Chargers</div>'+li(a.energy_ledger.chargers)+'</div></div>';
+    if(a.mask_gap) h+='<h3>The mask</h3><div class="callout w">'+esc(a.mask_gap)+'</div>';
+    if(a.appraisal) h+='<div class="chips" style="margin-top:8px"><span class="chip">appraisal: '+esc(a.appraisal)+'</span></div>';
+    h+='<h3>Needs</h3>'+li(a.needs)+'<h3>Strengths showing</h3>'+li(a.strengths);
+    if(a.reframe) h+='<h3>Reframe</h3><div class="callout">'+esc(a.reframe)+'</div>';
+    if(a.one_action) h+='<h3>One action</h3><div class="callout w">'+esc(a.one_action)+'</div>';
+    if(a.question) h+='<h3>Sit with this</h3><p><i>'+esc(a.question)+'</i></p>';
+  } else if(e.kind==='ideas'){
+    h+='<h3>'+esc(a.title||'Idea')+'</h3><p>'+esc(a.summary)+'</p>';
+    if(a.core_insight) h+='<div class="callout">'+esc(a.core_insight)+'</div>';
+    if(a.brains_check&&a.brains_check.length) h+='<h3>Through the 5Brains</h3>'+a.brains_check.map(function(c){return '<div class="callout" style="border-color:'+brainColor(c.brain)+'"><b>'+esc(c.brain)+'</b><div style="margin-top:3px">'+esc(c.verdict)+'</div></div>';}).join('');
+    if(a.who_for) h+='<h3>Who for</h3><p>'+esc(a.who_for)+'</p>';
+    h+='<h3>Assumptions to test</h3>'+li(a.assumptions)+'<h3>Risks</h3>'+li(a.risks);
+    if(a.next_step) h+='<h3>Smallest next step</h3><div class="callout w">'+esc(a.next_step)+'</div>';
+    if(a.captured_when) h+='<h3>Captured</h3><p>'+esc(a.captured_when)+'</p>';
+    if(a.excitement_vs_evidence) h+='<h3>Excitement vs evidence</h3><p>'+esc(a.excitement_vs_evidence)+'</p>';
+    h+='<div class="chips" style="margin-top:10px">'+(a.effort?'<span class="chip">effort: '+esc(a.effort)+'</span>':'')+(a.tags||[]).map(function(t){return '<span class="chip">#'+esc(t)+'</span>';}).join('')+'</div>';
+    if(a.connections&&a.connections.length) h+='<h3>Connections</h3>'+li(a.connections);
+  } else {
+    h+='<h3>Headline</h3><p><b>'+esc(a.headline)+'</b></p>';
+    var td=a.time_of_day; if(td){
+      h+='<h3>Peak windows</h3>'+li(td.peak_windows)+'<h3>Slump windows</h3>'+li(td.slump_windows)+'<h3>Idea windows</h3>'+li(td.idea_windows);
+      h+='<h3>Energy ledger</h3><div class="row" style="align-items:flex-start"><div><div class="small" style="color:var(--red)">Drains</div>'+li(td.drains)+'</div><div><div class="small" style="color:var(--ok)">Chargers</div>'+li(td.chargers)+'</div></div>';
+      if(td.recovery_effect) h+='<h3>Recovery effect</h3><p>'+esc(td.recovery_effect)+'</p>';
+      if(td.goalposts) h+='<h3>Goalposts</h3><p>'+esc(td.goalposts)+'</p>';
+      if(td.ideal_day&&td.ideal_day.length) h+='<h3>Your optimal day (draft)</h3>'+td.ideal_day.map(function(r){return '<div class="callout"><b>'+esc(r.time)+'</b> · '+esc(r.do)+'<div class="small muted">'+esc(r.why)+'</div></div>';}).join('');
+    }
+    h+=fiveBrainsHTML(a.five_brains)+'<h3>Patterns</h3>'+li(a.patterns);
+    if(a.correlations&&a.correlations.length) h+='<h3>Correlations</h3>'+a.correlations.map(function(c){return '<div class="callout"><b>'+esc(c.finding)+'</b><div class="small muted">'+esc(c.evidence)+'</div></div>';}).join('');
+    h+='<h3>Recurring themes</h3>'+li(a.recurring_themes)+'<h3>Wins</h3>'+li(a.wins)+'<h3>Watch-outs</h3>'+li(a.watch_outs);
+    h+='<h3>Focus next week</h3>'+(a.focus_next_week||[]).map(function(x){return '<div class="callout w">'+esc(x)+'</div>';}).join('');
+    if(a.note) h+='<p style="margin-top:10px"><i>'+esc(a.note)+'</i></p>';
+  }
+  return '<div class="an">'+h+'</div>';
+}
+var SHEET_ID=null;
+function openEntry(id){
+  var e=S.entries.find(function(x){return x.id===id;}); if(!e) return; SHEET_ID=id;
+  var h='<div class="row" style="margin-bottom:8px"><div><b>'+ICON[e.kind]+' '+esc(e.kind[0].toUpperCase()+e.kind.slice(1))+'</b><div class="small muted">'+esc(niceDate(e.date))+' · '+new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'</div></div><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
+  if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+(pa.energy||'–')+'</b>/10 · revs underneath <b>'+(pa.revs||'–')+'</b>/10<br>'+esc(pa.context||'')+'</p>'; }
+  if(e.kind==='feelings'||e.kind==='ideas'||e.kind==='pulse') h+='<details'+(e.analysis?'':' open')+'><summary class="small muted" style="margin:6px 0">Transcript</summary><textarea id="shTx" rows="6">'+esc(e.transcript)+'</textarea></details>';
+  if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting…</p>';
+  h+=analysisHTML(e);
+  h+='<div class="row" style="margin-top:16px">'+(e.kind==='feelings'||e.kind==='ideas'?'<button class="btn sm" id="shRe">'+(e.analysis?'Re-run reflection':'Reflect')+'</button>':'')+'<button class="btn sm" id="shDel" style="color:var(--red)">Delete</button></div>';
+  $('#sheetBody').innerHTML=h; $('#sheet').classList.add('on');
+  $('#shClose').onclick=closeSheet;
+  var tx=$('#shTx'); if(tx) tx.onchange=function(){ e.transcript=tx.value; e.updated_at=new Date().toISOString(); e._dirty=true; save(); queueSync(); };
+  var re=$('#shRe'); if(re) re.onclick=function(){ if(tx){ e.transcript=tx.value; } reflectEntry(e.id); };
+  $('#shDel').onclick=async function(){ if(!(await ask('Delete this entry?','Delete'))) return; e._deleted=true; e._dirty=true; e.updated_at=new Date().toISOString(); save(); queueSync(); closeSheet(); renderAll(); };
+}
+function closeSheet(){ SHEET_ID=null; $('#sheet').classList.remove('on'); }
+$('#sheet').addEventListener('click',function(e){ if(e.target.id==='sheet') closeSheet(); });
+
+function openDayEditor(k){
+  var d=day(k); SHEET_ID=null;
+  var h='<div class="row" style="margin-bottom:8px"><b>'+esc(niceDate(k))+'</b><button class="btn sm" style="flex:none" id="shClose">Done</button></div><div class="habits">';
+  S.habits.forEach(function(hb){ var done=habitDone(hb,k), auto=autoVal(hb,k); h+='<button class="hab'+(done?' done':'')+'" data-h="'+hb.id+'"'+(auto?' disabled':'')+'><span class="box">'+(done?'✓':'')+'</span><span class="nm">'+esc(hb.name)+'</span>'+(auto?'<span class="src">auto</span>':'')+'</button>'; });
+  h+='</div>';
+  $('#sheetBody').innerHTML=h; $('#sheet').classList.add('on'); $('#shClose').onclick=function(){ closeSheet(); renderAll(); };
+  $$('#sheetBody [data-h]').forEach(function(b){ b.onclick=function(){ d.checks[b.dataset.h]=!d.checks[b.dataset.h]; touchDay(k); openDayEditor(k); }; });
+}
+
+// ───────────────────────── trends ─────────────────────────
+function lineChart(svg, series, opts){
+  var W=svg.clientWidth||320, H=90, pad=4; svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  var all=[]; series.forEach(function(s){ s.data.forEach(function(v){ if(v!=null) all.push(v); }); });
+  if(!all.length){ svg.innerHTML='<text x="'+W/2+'" y="'+H/2+'" fill="#5d687a" font-size="12" text-anchor="middle">No data yet</text>'; return; }
+  var mn=opts&&opts.min!=null?opts.min:Math.min.apply(0,all), mx=opts&&opts.max!=null?opts.max:Math.max.apply(0,all); if(mx===mn){mx+=1;mn-=1;}
+  var n=series[0].data.length, out='';
+  for(var g=0;g<=2;g++){ var y=pad+(H-2*pad)*g/2; out+='<line x1="0" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="#2a3342" stroke-dasharray="2 4"/>'; }
+  series.forEach(function(s){
+    var pts=[], seg='';
+    s.data.forEach(function(v,i){ var x=n>1?i*(W-2*pad)/(n-1)+pad:W/2; if(v==null){ if(pts.length) seg+=path(pts); pts=[]; return; } var y=H-pad-(v-mn)/(mx-mn)*(H-2*pad); pts.push([x,y]); out+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="2.2" fill="'+s.c+'"/>'; });
+    if(pts.length) seg+=path(pts);
+    function path(p){ return p.length>1?'<polyline fill="none" stroke="'+s.c+'" stroke-width="2" stroke-linejoin="round" points="'+p.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1);}).join(' ')+'"/>':''; }
+    out=seg+out;
+  });
+  if(opts&&opts.labels) out+='<text x="2" y="12" fill="#5d687a" font-size="10">'+mx.toFixed(opts.dp||0)+'</text><text x="2" y="'+(H-4)+'" fill="#5d687a" font-size="10">'+mn.toFixed(opts.dp||0)+'</text>';
+  svg.innerHTML=out;
+}
+function todSummary(nDays){
+  var t=todayKey(), since=addDays(t,-(nDays-1)), agg={}, ctx={};
+  BLOCKS.forEach(function(b){ agg[b[2]]={e:[],r:[],ideas:0,feelings:0,walks:0}; });
+  S.entries.forEach(function(e){ if(e._deleted||e.date<since) return; var b=blockOf(e.created_at);
+    if(e.kind==='pulse'&&e.analysis){ if(e.analysis.energy) agg[b].e.push(e.analysis.energy); if(e.analysis.revs) agg[b].r.push(e.analysis.revs);
+      var c=e.analysis.context; if(c&&e.analysis.energy){ (ctx[c]=ctx[c]||[]).push(e.analysis.energy); } }
+    if(e.kind==='ideas') agg[b].ideas++; if(e.kind==='feelings') agg[b].feelings++; });
+  Object.keys(S.days).forEach(function(k){ if(k<since) return; var d=S.days[k], tm=(d.log&&d.log.times)||{};
+    if(d.energy_am&&tm.energy_am) agg[blockOf(tm.energy_am)].e.push(d.energy_am);
+    if(d.energy_pm&&tm.energy_pm) agg[blockOf(tm.energy_pm)].e.push(d.energy_pm);
+    ((d.log&&d.log.walk)||[]).forEach(function(w){ agg[blockOf(w)].walks++; }); });
+  function avg(a){ return a.length? +(a.reduce(function(x,y){return x+y;},0)/a.length).toFixed(1) : null; }
+  return { by_block: BLOCKS.map(function(b){ var g=agg[b[2]]; return {block:b[2], avg_energy:avg(g.e), avg_revs:avg(g.r), n:g.e.length, ideas:g.ideas, feelings:g.feelings, walks:g.walks}; }),
+    by_activity: Object.keys(ctx).map(function(c){ return {doing:c, avg_energy:avg(ctx[c]), n:ctx[c].length}; }).sort(function(a,b){return b.avg_energy-a.avg_energy;}) };
+}
+function heat(v,inv){ if(v==null) return '<span class="muted">–</span>'; var x=inv?11-v:v; var c=x>=7.5?'#7cc48a':x>=5.5?'#e6cf5c':x>=4?'#e89a5a':'#e07a6e'; return '<span class="cell" style="background:'+c+'">'+v+'</span>'; }
+function renderTrends(){
+  var ts=todSummary(30), tot=ts.by_block.reduce(function(a,b){return a+b.n;},0);
+  $('#todTag').textContent=tot+' readings · 30d';
+  $('#todBox').innerHTML = tot ? '<table class="tod"><tr><th>When</th><th>Energy</th><th>Revs</th><th>💡</th><th>🫀</th><th>🚶</th></tr>'+ts.by_block.map(function(b){ return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+(b.ideas||'')+'</td><td>'+(b.feelings||'')+'</td><td>'+(b.walks||'')+'</td></tr>'; }).join('')+'</table><p class="small muted" style="margin:8px 0 0">Energy from pulses and check-ins. Revs = what\'s running underneath. 💡 ideas and 🫀 feelings show when you record them. Needs ~2 weeks to mean much.</p>'
+    : '<p class="muted small">Log a few energy pulses through the day and this fills in: your peak, slump and idea windows.</p>';
+  $('#dcBox').innerHTML = ts.by_activity.length ? ts.by_activity.map(function(a){ return '<div class="bbar"><span class="nm" style="width:130px">'+esc(a.doing)+'</span><div class="prog"><i style="width:'+a.avg_energy*10+'%;background:'+(a.avg_energy>=6.5?'var(--ok)':a.avg_energy>=4.5?'var(--warm)':'var(--red)')+'"></i></div><b>'+a.avg_energy+'</b><span class="small muted">×'+a.n+'</span></div>'; }).join('') : '<p class="muted small">Tag what you were doing when you log a pulse.</p>';
+  var t=todayKey(), L=+S.settings.len||75, st=S.settings.start, g='', perf=0;
+  for(var i=0;i<L;i++){ var k=addDays(st,i), c=''; var dd=diffDays(k,t);
+    if(dd>0){ if(isPerfect(k)){c='p';perf++;} else c='m'; } else if(dd===0){ c='t'+(isPerfect(k)?' p':''); if(isPerfect(k)) perf++; }
+    g+='<i class="'+c+'" title="'+k+'"></i>'; }
+  $('#grid75').innerHTML=g; $('#chTag').textContent=perf+' perfect / '+Math.max(0,Math.min(L,dayNum()))+' days';
+  var d14=[]; for(var j=13;j>=0;j--) d14.push(addDays(t,-j));
+  function col(f){ return d14.map(function(k){ var d=S.days[k]; return d&&d[f]!=null&&d[f]!==''?+d[f]:null; }); }
+  lineChart($('#cEnergy'),[{c:'#7cc4b8',data:col('energy_am')},{c:'#5fa8e6',data:col('energy_pm')},{c:'#9f8cf0',data:col('mood')},{c:'#e6b45c',data:col('stress')}],{min:1,max:10,labels:true});
+  lineChart($('#cSleep'),[{c:'#9f8cf0',data:col('sleep_hours')},{c:'#7cc4b8',data:col('sleep_quality')}],{min:0,max:10,labels:true});
+  var d7=d14.slice(7);
+  $('#brainTrend').innerHTML=S.brains.map(function(b){ var v=d7.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id];}).filter(Boolean); var avg=v.length?v.reduce(function(x,y){return x+y;},0)/v.length:null;
+    return '<div class="bbar"><span class="nm" style="color:'+b.color+'">'+esc(b.name)+'</span><div class="prog"><i style="width:'+(avg?avg*10:0)+'%;background:'+b.color+'"></i></div><b>'+(avg?avg.toFixed(1):'–')+'</b></div>'; }).join('');
+  lineChart($('#cBrains'),S.brains.map(function(b){ return {c:b.color,data:d14.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id]||null;})}; }),{min:1,max:10,labels:true});
+  var d30=[]; for(var m=29;m>=0;m--) d30.push(addDays(t,-m));
+  var wd=d30.map(function(k){ var p=S.phoenix[k]; return S.weights[k]||(p&&p.weight_kg)||null; });
+  lineChart($('#cWeight'),[{c:'#e6b45c',data:wd}],{labels:true,dp:1});
+  var wv=wd.filter(function(x){return x!=null;});
+  $('#wSummary').textContent = wv.length>1 ? (wv[wv.length-1]-wv[0]>=0?'+':'')+(wv[wv.length-1]-wv[0]).toFixed(1)+' kg over '+wv.length+' weigh-ins' : '';
+  $('#hitRate').innerHTML = S.habits.map(function(h){ var n=d14.filter(function(k){return habitDone(h,k);}).length; var p=Math.round(n/14*100);
+    return '<div style="margin:6px 0"><div class="lbl" style="margin:0 0 4px"><span>'+esc(h.name)+'</span><b>'+n+'/14</b></div><div class="prog"><i style="width:'+p+'%"></i></div></div>'; }).join('');
+}
+
+// ───────────────────────── report for Dave ─────────────────────────
+function rangeKeys(a,b){ var o=[], k=a; while(k<=b && o.length<400){ o.push(k); k=addDays(k,1); } return o; }
+function avgOf(a){ a=a.filter(function(x){return x!=null&&x!==''&&!isNaN(x);}).map(Number); return a.length? +(a.reduce(function(x,y){return x+y;},0)/a.length).toFixed(1):null; }
+function reportStats(){
+  var from=S.settings.start, to=todayKey(); if(S.settings.reportDate && S.settings.reportDate<to) to=S.settings.reportDate;
+  var ks=rangeKeys(from,to), past=ks.filter(function(k){return k<todayKey()||isPerfect(k);});
+  var tracked=ks.filter(hasAnyData), perfect=ks.filter(isPerfect);
+  var best=0,cur=0; ks.forEach(function(k){ if(isPerfect(k)){cur++; best=Math.max(best,cur);} else cur=0; });
+  var D=function(f){ return ks.map(function(k){ var d=S.days[k]; return d?d[f]:null; }); };
+  var pul=S.entries.filter(function(e){return e.kind==='pulse'&&!e._deleted&&e.date>=from&&e.date<=to;});
+  // recovery effect: pulses within 90 min after a walk or breathing set vs others
+  var after=[], other=[];
+  pul.forEach(function(e){ var L=(S.days[e.date]&&S.days[e.date].log)||{}, t=new Date(e.created_at).getTime();
+    var rec=(L.walk||[]).concat(L.breath||[]).some(function(w){ var dt=(t-new Date(w).getTime())/60000; return dt>=0&&dt<=90; });
+    (rec?after:other).push(e.analysis&&e.analysis.energy); });
+  var gm=D('goal_moved').filter(function(x){return x!=null;}), ht=D('hit_target').filter(function(x){return x!=null;});
+  var n=Math.max(1,ks.length), half=Math.floor(ks.length/2);
+  var brainAvg=S.brains.map(function(b){ var v=function(arr){ return avgOf(arr.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id];})); };
+    return {name:b.name, job:b.job, color:b.color, avg:v(ks), first:v(ks.slice(0,half)), second:v(ks.slice(half))}; });
+  var habits=S.habits.map(function(h){ var c=ks.filter(function(k){return habitDone(h,k);}).length; return {name:h.name, req:h.req, done:c, pct:Math.round(c/n*100)}; });
+  var L=function(x){ return ks.reduce(function(a,k){ var d=S.days[k]; return a+((d&&d.log&&d.log[x])||[]).length; },0); };
+  var walkTimes=[]; ks.forEach(function(k){ var d=S.days[k]; ((d&&d.log&&d.log.walk)||[]).forEach(function(w){ walkTimes.push(blockOf(w)); }); });
+  var stake=pul.filter(function(e){return e.analysis&&e.analysis.context==='Multi-stakeholder mtg';}).map(function(e){return e.analysis.energy;});
+  var nonStake=pul.filter(function(e){return e.analysis&&e.analysis.context&&e.analysis.context!=='Multi-stakeholder mtg';}).map(function(e){return e.analysis.energy;});
+  var w=ks.map(function(k){ var p=S.phoenix[k]; return S.weights[k]||(p&&p.weight_kg)||null; }).filter(Boolean);
+  return { from:from, to:to, days:ks.length, keys:ks, tracked:tracked.length, perfect:perfect.length, best:best, streak:streak(),
+    sleep:avgOf(D('sleep_hours')), sleepQ:avgOf(D('sleep_quality')), eAM:avgOf(D('energy_am')), ePM:avgOf(D('energy_pm')), mood:avgOf(D('mood')), stress:avgOf(D('stress')), focus:avgOf(D('focus')),
+    pulses:pul.length, pulseE:avgOf(pul.map(function(e){return e.analysis&&e.analysis.energy;})), revs:avgOf(pul.map(function(e){return e.analysis&&e.analysis.revs;})),
+    afterRec:avgOf(after), afterRecN:after.filter(Boolean).length, noRec:avgOf(other), noRecN:other.filter(Boolean).length,
+    stakeE:avgOf(stake), stakeN:stake.length, nonStakeE:avgOf(nonStake),
+    goalMoved:gm.length?Math.round(gm.filter(Boolean).length/gm.length*100):null, goalN:gm.length, hitTarget:ht.length?Math.round(ht.filter(Boolean).length/ht.length*100):null,
+    walks:L('walk'), snacks:L('snack'), breaths:L('breath'), walkBlocks:walkTimes,
+    waterDays:ks.filter(function(k){return waterMl(k)>=(+S.settings.water||3000);}).length,
+    feelings:S.entries.filter(function(e){return e.kind==='feelings'&&!e._deleted&&e.date>=from&&e.date<=to;}).length,
+    ideas:S.entries.filter(function(e){return e.kind==='ideas'&&!e._deleted&&e.date>=from&&e.date<=to;}).length,
+    weeklies:S.entries.filter(function(e){return e.kind==='weekly'&&!e._deleted&&e.date>=from&&e.date<=to;}),
+    trained:ks.filter(function(k){return S.phoenix[k]&&S.phoenix[k].trained;}).length,
+    wStart:w.length?w[0]:null, wEnd:w.length?w[w.length-1]:null,
+    brains:brainAvg, habits:habits, tod:todSummary(Math.max(7,ks.length)) };
+}
+function svgChart(series,opts,w,h){ var svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('class','chart'); svg.style.width='100%'; document.body.appendChild(svg); Object.defineProperty(svg,'clientWidth',{value:w||700}); lineChart(svg,series,opts); var html=svg.outerHTML; svg.remove(); return html.replace(/stroke="#2a3342"/g,'stroke="#e3e6ec"'); }
+function fmt(v,u){ return v==null?'–':v+(u||''); }
+function renderReport(){
+  var R=reportStats(), A=S.settings.reportAI && S.settings.reportAI.to===R.to ? S.settings.reportAI.data : null;
+  var K=R.keys.slice(-Math.min(R.keys.length,60));
+  function col(f){ return K.map(function(k){ var d=S.days[k]; return d&&d[f]!=null&&d[f]!==''?+d[f]:null; }); }
+  function L(a){ return a&&a.length?'<ul>'+a.map(function(x){return '<li contenteditable>'+esc(x)+'</li>';}).join('')+'</ul>':''; }
+  var h='';
+  h+='<div class="dots">'+S.brains.map(function(b){return '<i style="background:'+b.color+'"></i>';}).join('')+'</div>';
+  h+='<h1>5 Brains: progress report</h1><p class="muted">Jon · prepared for David Munro, Executive Performance Partners<br>'+esc(niceDate(R.from))+' to '+esc(niceDate(R.to))+' · '+R.days+' days · generated '+new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})+'</p>';
+  h+='<h2>1. Summary</h2>';
+  h+= A ? '<p contenteditable>'+esc(A.executive_summary)+'</p>' : '<p class="muted" contenteditable>Tap “Write AI summary” to draft this from your data, or type your own summary here.</p>';
+  h+='<div class="kpis"><div class="kpi"><b>'+R.tracked+'/'+R.days+'</b><span>days tracked</span></div><div class="kpi"><b>'+R.perfect+'</b><span>perfect days</span></div><div class="kpi"><b>'+R.best+'</b><span>longest streak</span></div><div class="kpi"><b>'+R.pulses+'</b><span>energy pulses logged</span></div>'+
+     '<div class="kpi"><b>'+fmt(R.pulseE)+'</b><span>avg energy (pulses)</span></div><div class="kpi"><b>'+fmt(R.revs)+'</b><span>avg revs underneath</span></div><div class="kpi"><b>'+fmt(R.sleep,' h')+'</b><span>avg sleep</span></div><div class="kpi"><b>'+R.trained+'</b><span>training sessions</span></div></div>';
+  h+='<h2>2. Core theme: energy efficiency</h2><p>Performance = energy × capability. Capability is constant and energy fluctuates. The goal is the same or a better outcome for less energy, finishing with 20% in the tank.</p>';
+  h+='<h3>Focus point 1: protect energy through the diary</h3><table><tr><th>Measure</th><th>Result</th></tr>'+
+     '<tr><td>Reviewed tomorrow\'s diary</td><td>'+((R.habits.find(function(x){return /diary/i.test(x.name);})||{}).pct||0)+'% of days</td></tr>'+
+     '<tr><td>Walk-and-talk 1-on-1s</td><td>'+((R.habits.find(function(x){return /walk-and-talk/i.test(x.name);})||{}).done||0)+' days</td></tr>'+
+     '<tr><td>Energy after multi-stakeholder meetings</td><td>'+fmt(R.stakeE)+' (n='+R.stakeN+') vs '+fmt(R.nonStakeE)+' for everything else</td></tr></table>';
+  if(A&&A.focus1) h+='<div class="box" contenteditable>'+esc(A.focus1)+'</div>';
+  h+='<h3>Focus point 2: active recovery, daily</h3><table><tr><th>Measure</th><th>Result</th></tr>'+
+     '<tr><td>7-minute walks</td><td>'+R.walks+' total · '+(R.walks/Math.max(1,R.days)).toFixed(1)+'/day</td></tr>'+
+     '<tr><td>Recovery snacks (target '+(+S.settings.snackT||3)+'/day)</td><td>'+R.snacks+' total · '+(R.snacks/Math.max(1,R.days)).toFixed(1)+'/day</td></tr>'+
+     '<tr><td>4-6 breathing sets</td><td>'+R.breaths+' total</td></tr>'+
+     '<tr><td>Water target hit</td><td>'+R.waterDays+'/'+R.days+' days</td></tr>'+
+     '<tr><td>Energy within 90 min after a walk or breathing set</td><td>'+fmt(R.afterRec)+' (n='+R.afterRecN+') vs '+fmt(R.noRec)+' otherwise (n='+R.noRecN+')</td></tr></table>';
+  if(A&&A.focus2) h+='<div class="box" contenteditable>'+esc(A.focus2)+'</div>';
+  h+='<h3>Supporting observations</h3><table><tr><th>Observation from the debrief</th><th>What the data shows</th></tr>'+
+     '<tr><td>Calm surface, high revs underneath</td><td>Avg revs '+fmt(R.revs)+'/10 against avg energy '+fmt(R.pulseE)+'/10</td></tr>'+
+     '<tr><td>Goals reset upward mid-day</td><td>'+(R.goalMoved==null?'not logged yet':'Goalposts moved on '+R.goalMoved+'% of '+R.goalN+' logged days; original target hit '+fmt(R.hitTarget,'%'))+'</td></tr></table>';
+  h+='<h2>3. Energy by time of day</h2><table><tr><th>Time block</th><th>Avg energy</th><th>Avg revs</th><th>Readings</th><th>Ideas</th><th>Feelings</th><th>Walks</th></tr>'+
+     R.tod.by_block.map(function(b){return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+b.n+'</td><td>'+b.ideas+'</td><td>'+b.feelings+'</td><td>'+b.walks+'</td></tr>';}).join('')+'</table>';
+  h+='<h3>Drains vs chargers (avg energy by activity)</h3>'+(R.tod.by_activity.length?'<table><tr><th>Doing</th><th>Avg energy</th><th>n</th></tr>'+R.tod.by_activity.map(function(a){return '<tr><td>'+esc(a.doing)+'</td><td>'+heat(a.avg_energy)+'</td><td>'+a.n+'</td></tr>';}).join('')+'</table>':'<p class="muted">No tagged pulses yet.</p>');
+  if(A&&A.optimal_day&&A.optimal_day.length){ h+='<h3>Draft optimal day</h3><table><tr><th>When</th><th>What</th><th>Why (evidence)</th></tr>'+A.optimal_day.map(function(r){return '<tr><td contenteditable>'+esc(r.time)+'</td><td contenteditable>'+esc(r.do)+'</td><td contenteditable>'+esc(r.why)+'</td></tr>';}).join('')+'</table>'; }
+  h+='<h2>4. Trends</h2><h3>Energy, mood and stress</h3>'+svgChart([{c:'#3f9d8f',data:col('energy_am')},{c:'#3b82c4',data:col('energy_pm')},{c:'#7a63d8',data:col('mood')},{c:'#c98f1f',data:col('stress')}],{min:1,max:10,labels:true})+
+     '<p class="muted small">Teal = energy AM · Blue = energy PM · Purple = mood · Amber = stress</p>';
+  h+='<h3>Sleep</h3>'+svgChart([{c:'#7a63d8',data:col('sleep_hours')},{c:'#3f9d8f',data:col('sleep_quality')}],{min:0,max:10,labels:true})+'<p class="muted small">Purple = hours · Teal = quality /10 · avg '+fmt(R.sleep,' h')+', quality '+fmt(R.sleepQ)+'</p>';
+  h+='<h3>5Brains</h3><table><tr><th>Brain</th><th>Job</th><th>Avg</th><th>First half</th><th>Second half</th></tr>'+R.brains.map(function(b){return '<tr><td><b style="color:'+b.color+'">●</b> '+esc(b.name)+'</td><td>'+esc(b.job)+'</td><td>'+heat(b.avg)+'</td><td>'+fmt(b.first)+'</td><td>'+fmt(b.second)+'</td></tr>';}).join('')+'</table>';
+  h+=svgChart(S.brains.map(function(b){return {c:b.color,data:K.map(function(k){var d=S.days[k];return d&&d.brains&&d.brains[b.id]||null;})};}),{min:1,max:10,labels:true});
+  if(R.wStart) h+='<p>Bodyweight (Phoenix): '+(+R.wStart).toFixed(1)+' → '+(+R.wEnd).toFixed(1)+' kg</p>';
+  h+='<h3>Habit completion</h3><table><tr><th>Tick</th><th>Type</th><th>Days</th><th>%</th></tr>'+R.habits.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+(x.req?'Required':'Bonus')+'</td><td>'+x.done+'/'+R.days+'</td><td>'+heat(Math.round(x.pct/10))+'</td></tr>';}).join('')+'</table>';
+  h+='<h2 class="pb">5. Reflections</h2>';
+  if(A){ h+='<h3>Key patterns</h3>'+L(A.key_patterns)+'<h3>What worked</h3>'+L(A.what_worked)+'<h3>What didn\'t</h3>'+L(A.what_didnt)+'<h3>Recurring themes (journal)</h3>'+L(A.themes)+'<h3>Proposed next phase</h3>'+L(A.next_phase)+'<h3>Questions for Dave</h3>'+L(A.questions_for_dave); }
+  else h+='<p class="muted">Tap “Write AI summary” to draft patterns, what worked, themes and questions for Dave. Journal entries are summarised as themes only; no raw transcripts go in the report.</p>';
+  h+='<p class="muted small">Data: '+R.feelings+' feelings entries · '+R.ideas+' idea entries · '+R.pulses+' energy pulses · '+R.weeklies.length+' weekly reviews.</p>';
+  h+='<h2 class="pb">Appendix: how the 5 Brains app works</h2>'+
+   '<p>This is a personal PWA on Jon\'s phone, built after the EPP 5Brains debrief as his “notepad” for logging what comes before his highs and lows. It is linked two ways with Phoenix, his training and nutrition app.</p>'+
+   '<table><tr><th>Feature</th><th>What it captures</th><th>Why</th></tr>'+
+   '<tr><td>Morning check-in</td><td>Sleep hours and quality, morning energy, the day\'s target</td><td>Baseline energy, and the original target to compare against at night</td></tr>'+
+   '<tr><td>5Brains check</td><td>A daily 1–10 for each brain: '+S.brains.map(function(b){return esc(b.name)+' ('+esc(b.job.toLowerCase())+')';}).join(', ')+'</td><td>Shows which brain is under-served</td></tr>'+
+   '<tr><td>Energy pulse</td><td>Timestamped energy, revs underneath, current activity, and what came before</td><td>David\'s notepad habit; builds the time-of-day map</td></tr>'+
+   '<tr><td>Active recovery</td><td>One-tap 7-min walks, protein/carb snacks, and a guided 4-in/6-out breathing set (×4)</td><td>Focus point 2, and its measured effect on the next pulse</td></tr>'+
+   '<tr><td>Water</td><td>Daily water, shared with Phoenix</td><td>Recovery</td></tr>'+
+   '<tr><td>Daily ticks</td><td>Diary reviewed, walk-and-talks, habits; several auto-tick from data</td><td>75 Hard-style consistency and a perfect-day streak</td></tr>'+
+   '<tr><td>Evening check-in</td><td>Energy, mood, stress, focus, whether the goalposts moved, original target hit, win, gratitude</td><td>Catches the mid-day upward goal reset</td></tr>'+
+   '<tr><td>Voice journal: Feelings</td><td>Spoken entry, transcribed, then given a structured reflection</td><td>Processing; spots patterns over time</td></tr>'+
+   '<tr><td>Voice journal: Ideas</td><td>Spoken idea, turned into a brief, logged with time and energy at capture</td><td>Finds creative windows</td></tr>'+
+   '<tr><td>Weekly review</td><td>AI pattern analysis across the week</td><td>Peak, slump and idea windows; drains vs chargers; a draft ideal day</td></tr>'+
+   '<tr><td>Phoenix link</td><td>Training sessions, weigh-ins, nutrition vs target in; weigh-ins, water and scores out</td><td>Connects body data to energy</td></tr></table>'+
+   '<h3>How reflections are assessed</h3><p>Each entry is read, in this order of priority, through: the 5Brains lens; energy management (physical, emotional, mental and purpose energy; drains vs chargers); CBT thinking patterns; ACT (the gap between the calm face and the revs underneath, and moving-goalpost thinking); stress appraisal (threat vs challenge); self-determination needs (autonomy, competence, connection); and emotional granularity. This is structured self-reflection, not clinical assessment.</p>'+
+   '<h3>Daily use</h3><ul><li><b>Wake:</b> morning check-in, 5Brains check, weigh-in</li><li><b>During the day:</b> a pulse at highs, lows and after big meetings; a walk, snack or breathing set after heavy blocks; voice notes as they come</li><li><b>Evening:</b> check-in and a diary review for tomorrow</li><li><b>Sunday:</b> weekly review</li></ul>';
+  $('#rp').innerHTML=h;
+}
+async function reportAI(){
+  var b=$('#rpAI'); b.disabled=true; b.innerHTML='<span class="spin"></span> Writing…';
+  try{
+    var R=reportStats(); var copy=JSON.parse(JSON.stringify(R)); delete copy.keys; delete copy.weeklies;
+    var weeks=R.weeklies.map(function(e){return {date:e.date, analysis:e.analysis};});
+    var ents=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice(0,80)
+      .map(function(e){return {date:e.date,time:hhmm(e.created_at),block:blockOf(e.created_at),kind:e.kind,summary:e.analysis?(e.analysis.summary||e.analysis.title):e.transcript.slice(0,300),driving:e.analysis&&e.analysis.five_brains&&e.analysis.five_brains.driving};});
+    var prompt='You are a performance psychologist writing a progress report Jon will hand to his EPP coach David Munro at their next session. Write in plain, direct Australian English, first person from Jon\'s point of view where natural. Base every claim on the data and name the evidence (numbers, time blocks). Say clearly where the data is thin. Never quote raw journal text. Focus on David\'s core theme (energy efficiency) and his two focus points. Return ONLY JSON: {"executive_summary":"4-6 sentences","focus1":"assessment of diary/energy protection, 2-4 sentences","focus2":"assessment of active recovery, 2-4 sentences","optimal_day":[{"time":"","do":"","why":"evidence"}],"key_patterns":[""],"what_worked":[""],"what_didnt":[""],"themes":["recurring journal themes, abstracted"],"next_phase":["max 4"],"questions_for_dave":["max 5"]}';
+    var a=await callClaude(prompt,{stats:copy, weekly_reviews:weeks, entry_summaries:ents});
+    S.settings.reportAI={to:R.to, data:a, at:new Date().toISOString()}; save(); renderReport(); toast('Summary drafted. Tap any text to edit it.');
+  }catch(e){ toast(e.message); }
+  b.disabled=false; b.textContent='✨ Write AI summary';
+}
+function openReport(){ renderReport(); $('#report').classList.add('on'); document.body.classList.add('printing'); }
+function closeReport(){ $('#report').classList.remove('on'); document.body.classList.remove('printing'); }
+
+// ───────────────────────── settings ─────────────────────────
+function renderSettings(){
+  $('#sStart').value=S.settings.start; $('#sLen').value=S.settings.len; $('#sWater').value=S.settings.water;
+  $('#sReport').value=S.settings.reportDate||'';
+  $('#sSnack').value=S.settings.snackT; $('#sWalk').value=S.settings.walkT; $('#sPulse').value=S.settings.pulseT;
+  $('#sStrict').value=S.settings.strict?'1':'0'; $('#sKcal').value=S.settings.kcalTol;
+  $('#sAiUrl').value=S.settings.aiUrl; $('#sAiModel').value=S.settings.aiModel; $('#sAbout').value=S.settings.about||'';
+  var he=$('#habEdit'); he.innerHTML='';
+  S.habits.forEach(function(h,i){
+    var r=document.createElement('div'); r.className='set-h';
+    r.innerHTML='<input value="'+esc(h.name)+'"><select>'+Object.keys(AUTO_LABEL).map(function(a){return '<option value="'+a+'"'+(a===h.auto?' selected':'')+'>'+AUTO_LABEL[a]+'</option>';}).join('')+'</select>'+
+      '<button class="btn sm" data-req>'+(h.req?'Req':'Bonus')+'</button><button class="btn sm" data-del>✕</button>';
+    $('input',r).onchange=function(){ h.name=this.value; save(); renderToday(); };
+    $('select',r).onchange=function(){ h.auto=this.value; save(); renderToday(); };
+    $('[data-req]',r).onclick=function(){ h.req=!h.req; save(); renderSettings(); renderAll(); };
+    $('[data-del]',r).onclick=async function(){ if(await ask('Remove "'+h.name+'"?','Remove')){ S.habits.splice(i,1); save(); renderSettings(); renderAll(); } };
+    he.appendChild(r);
+  });
+  var be=$('#brainEdit'); be.innerHTML='';
+  S.brains.forEach(function(b){ var r=document.createElement('div'); r.style.marginBottom='10px';
+    r.innerHTML='<div class="row" style="gap:6px"><input type="color" value="'+b.color+'" style="flex:none;width:44px;padding:2px;height:40px"><input value="'+esc(b.name)+'" style="flex:1"><input value="'+esc(b.job)+'" style="flex:2"></div><input value="'+esc(b.q)+'" style="margin-top:6px">';
+    var ins=$$('input',r); ins[0].onchange=function(){b.color=this.value;save();}; ins[1].onchange=function(){b.name=this.value;save();}; ins[2].onchange=function(){b.job=this.value;save();}; ins[3].onchange=function(){b.q=this.value;save();};
+    be.appendChild(r); });
+  renderAuth();
+  $('#verTxt').textContent='5 Brains v'+APP_VERSION+(S.lastSync?' · last sync '+new Date(S.lastSync).toLocaleString('en-AU'):'');
+}
+function bindSettings(){
+  function on(id,fn){ $(id).addEventListener('change',function(){ fn(this.value); save(); renderAll(); }); }
+  on('#sStart',function(v){ if(v) S.settings.start=v; });
+  on('#sLen',function(v){ S.settings.len=Math.max(1,+v||75); });
+  on('#sWater',function(v){ S.settings.water=Math.max(250,+v||3000); queueWaterTarget(); });
+  on('#sReport',function(v){ S.settings.reportDate=v; });
+  on('#sSnack',function(v){ S.settings.snackT=Math.max(1,+v||3); });
+  on('#sWalk',function(v){ S.settings.walkT=Math.max(1,+v||1); });
+  on('#sPulse',function(v){ S.settings.pulseT=Math.max(1,+v||3); });
+  on('#sStrict',function(v){ S.settings.strict=v==='1'; });
+  on('#sKcal',function(v){ S.settings.kcalTol=Math.max(0,+v||150); });
+  on('#sAiUrl',function(v){ S.settings.aiUrl=v.trim(); });
+  on('#sAiModel',function(v){ S.settings.aiModel=v.trim(); });
+  on('#sAbout',function(v){ S.settings.about=v; });
+  $('#habAdd').onclick=function(){ S.habits.push({id:'h'+Date.now().toString(36),name:'New tick',auto:'none',req:false}); save(); renderSettings(); renderToday(); };
+  $('#aiTest').onclick=async function(){ var o=$('#aiTestOut'); o.textContent='testing…';
+    try{ var r=await fetch(S.settings.aiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:S.settings.aiModel,max_tokens:20,messages:[{role:'user',content:'Reply with just: OK'}]})});
+      var j=await r.json().catch(function(){return {};}); o.textContent = r.ok ? '✓ connected ('+((j.content&&j.content[0]&&j.content[0].text)||'ok').trim()+')' : '✗ '+r.status+' '+(j.error&&j.error.message||''); }
+    catch(e){ o.textContent='✗ '+e.message+' (likely CORS — see setup notes)'; } };
+  $('#expBtn').onclick=function(){ var b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='5brains-'+todayKey()+'.json'; a.click(); };
+  $('#impIn').onchange=function(){ var f=this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ try{ var s=JSON.parse(rd.result); if(!s.settings) throw 0; ask('Replace all local data with this file?','Replace').then(function(ok){ if(ok){ S=s; save(); renderAll(); toast('Imported'); } }); }catch(e){ toast('Not a 5 Brains export'); } }; rd.readAsText(f); };
+  $('#syncBtn').onclick=function(){ fullSync(true); };
+  $('#jFilter').onchange=renderJournal;
+  $$('[data-report]').forEach(function(b){ b.onclick=openReport; });
+  $('#rpClose').onclick=closeReport; $('#rpAI').onclick=reportAI;
+  $('#rpPrint').onclick=function(){ try{ window.print(); }catch(e){ toast('Use Download, open it in Safari, then Share → Print'); } };
+  $('#rpHtml').onclick=function(){ var css=Array.prototype.map.call(document.querySelectorAll('style'),function(x){return x.textContent;}).join('\n');
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5 Brains report '+todayKey()+'</title><style>'+css+' .report{position:static;display:block}</style></head><body class="printing"><div class="report on"><div class="rp">'+$('#rp').innerHTML+'</div></div></body></html>';
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([html],{type:'text/html'})); a.download='5brains-report-'+todayKey()+'.html'; a.click(); };
+  $('#weeklyBtn').onclick=runWeekly;
+}
+
+// ───────────────────────── Supabase sync ─────────────────────────
+var SB=null, SESSION=null;
+function initSB(){
+  if(!window.supabase){ return; }
+  SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, storageKey:'fivebrains-auth', autoRefreshToken:true}});
+  SB.auth.getSession().then(function(r){ SESSION=r.data.session; renderAuth(); renderPhoenix(); if(SESSION) fullSync(); });
+  SB.auth.onAuthStateChange(function(ev,sess){ SESSION=sess; renderAuth(); renderPhoenix(); });
+}
+function renderAuth(){
+  var b=$('#authBox'); if(!b) return;
+  if(!SB){ b.innerHTML='<p class="muted small">Offline — the sync library didn\'t load. Everything still saves on this phone.</p>'; return; }
+  if(SESSION){ b.innerHTML='<p class="small" style="margin:0 0 10px">Signed in as <b>'+esc(SESSION.user.email)+'</b></p><button class="btn sm" id="soBtn">Sign out</button>'; $('#soBtn').onclick=function(){ SB.auth.signOut(); }; return; }
+  b.innerHTML='<p class="small muted" style="margin:0 0 8px">Use your Phoenix login. Your training, weigh-ins and nutrition flow in automatically.</p><input id="aEm" type="email" placeholder="Email" autocomplete="username"><div class="sp"></div><input id="aPw" type="password" placeholder="Password" autocomplete="current-password"><div class="sp"></div><button class="btn pri full" id="aBtn">Sign in</button>';
+  $('#aBtn').onclick=async function(){ this.disabled=true; var r=await SB.auth.signInWithPassword({email:$('#aEm').value.trim(),password:$('#aPw').value}); this.disabled=false; if(r.error) toast(r.error.message); else { toast('Signed in'); fullSync(true); } };
+}
+var _qT; function queueSync(){ clearTimeout(_qT); _qT=setTimeout(pushDirty, 1500); }
+function queueWaterTarget(){ S.dirty.water[todayKey()]=1; queueSync(); }
+var DAY_COLS=['log','goal_moved','hit_target','brains','sleep_hours','sleep_quality','energy_am','energy_pm','mood','stress','focus','intention','win','gratitude','checks','perfect_day','updated_at'];
+async function pushDirty(){
+  if(!SB||!SESSION||!navigator.onLine) return;
+  var uid=SESSION.user.id;
+  var dk=Object.keys(S.dirty.days);
+  if(dk.length){
+    var rows=dk.map(function(k){ var d=S.days[k]||{}; var r={user_id:uid,date:k}; DAY_COLS.forEach(function(c){ r[c]= d[c]===''?null:(d[c]===undefined?null:d[c]); }); r.checks=d.checks||{}; r.brains=d.brains||{}; r.log=d.log||{}; r.perfect_day=isPerfect(k); r.updated_at=d.updated_at||new Date().toISOString(); return r; });
+    var a=await SB.from('brains_day').upsert(rows,{onConflict:'user_id,date'});
+    if(!a.error) dk.forEach(function(k){ delete S.dirty.days[k]; }); else console.warn('brains_day',a.error);
+  }
+  var wk=Object.keys(S.dirty.water);
+  if(wk.length){
+    var wr=wk.map(function(k){ var w=S.water[k]||{ml:0}; return {user_id:uid,date:k,water_ml:+w.ml||0,target_ml:+S.settings.water||3000,source:w.source||'five-brains',updated_at:w.updated_at||new Date().toISOString()}; });
+    var b=await SB.from('daily_water').upsert(wr,{onConflict:'user_id,date'});
+    if(!b.error) wk.forEach(function(k){ delete S.dirty.water[k]; }); else console.warn('daily_water',b.error);
+  }
+  var de=S.entries.filter(function(e){return e._dirty;});
+  for(var i=0;i<de.length;i++){
+    var e=de[i], res;
+    if(e._deleted) res=await SB.from('brains_entry').delete().eq('id',e.id);
+    else res=await SB.from('brains_entry').upsert({id:e.id,user_id:uid,date:e.date,kind:e.kind,transcript:e.transcript,analysis:e.analysis,created_at:e.created_at,updated_at:e.updated_at});
+    if(!res.error){ e._dirty=false; } else console.warn('brains_entry',res.error);
+  }
+  S.entries=S.entries.filter(function(e){ return !(e._deleted && !e._dirty); });
+  S.lastSync=new Date().toISOString(); save(); renderPhoenix();
+}
+async function fullSync(loud){
+  if(!SB||!SESSION){ if(loud) toast('Sign in first (Settings)'); return; }
+  if(!navigator.onLine){ if(loud) toast('Offline'); return; }
+  try{
+    await pushDirty();
+    var since=addDays(todayKey(),-120);
+    var res=await Promise.all([
+      SB.from('accountability_day').select('*').gte('date',since).order('date',{ascending:false}),
+      SB.from('brains_day').select('*').gte('date',since),
+      SB.from('daily_water').select('*').gte('date',since),
+      SB.from('brains_entry').select('*').order('created_at',{ascending:false}).limit(300)
+    ]);
+    if(res[0].data){ res[0].data.forEach(function(r){ S.phoenix[r.date]=r; }); }
+    else if(res[0].error) console.warn('accountability_day',res[0].error);
+    if(res[1].data) res[1].data.forEach(function(r){ var l=S.days[r.date]; if(!l || !l.updated_at || (r.updated_at && r.updated_at>l.updated_at && !S.dirty.days[r.date])){ var d={checks:r.checks||{}}; DAY_COLS.forEach(function(c){ if(c!=='checks') d[c]=r[c]; }); S.days[r.date]=d; } });
+    if(res[2].data) res[2].data.forEach(function(r){ var l=S.water[r.date]; if(!S.dirty.water[r.date] && (!l || !l.updated_at || r.updated_at>l.updated_at)) S.water[r.date]={ml:+r.water_ml||0,log:(l&&l.log)||[],updated_at:r.updated_at,source:r.source}; });
+    if(res[3].data){ var byId={}; S.entries.forEach(function(e){byId[e.id]=e;});
+      res[3].data.forEach(function(r){ var l=byId[r.id]; if(!l){ S.entries.push({id:r.id,date:r.date,kind:r.kind,transcript:r.transcript,analysis:r.analysis,created_at:r.created_at,updated_at:r.updated_at}); } else if(!l._dirty && r.updated_at>l.updated_at){ l.transcript=r.transcript; l.analysis=r.analysis; l.updated_at=r.updated_at; } });
+      S.entries.sort(function(a,b){ return a.created_at<b.created_at?1:-1; }); }
+    var missing=[res[1],res[2],res[3]].some(function(r){return r.error && /does not exist|relation|schema cache/i.test(r.error.message||'');});
+    if(missing && loud) toast('Run the 5 Brains SQL in Supabase first');
+    S.lastSync=new Date().toISOString(); save(); renderAll(); if(loud) toast('Synced');
+  }catch(e){ console.warn(e); if(loud) toast('Sync failed: '+e.message); }
+}
+
+// ───────────────────────── nav + boot ─────────────────────────
+var VIEW='today';
+$$('nav.tabs button').forEach(function(b){ b.onclick=function(){ VIEW=b.dataset.v; $$('nav.tabs button').forEach(function(x){x.classList.toggle('on',x===b);}); $$('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+VIEW);}); renderAll(); window.scrollTo(0,0); }; });
+function renderAll(){ renderHeader(); if(VIEW==='today') renderToday(); if(VIEW==='journal') renderJournal(); if(VIEW==='trends') renderTrends(); if(VIEW==='settings') renderSettings(); }
+
+bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
+document.addEventListener('visibilitychange',function(){ if(!document.hidden){ renderAll(); fullSync(); } });
+window.addEventListener('online',function(){ fullSync(); });
+var _lastDay=todayKey(); setInterval(function(){ if(todayKey()!==_lastDay){ _lastDay=todayKey(); renderAll(); } },60000);
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+</script>
+</body>
+</html>
