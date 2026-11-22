@@ -25,7 +25,9 @@ body{padding-top:var(--sa-t);padding-bottom:calc(72px + var(--sa-b))}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,textarea,select{font:inherit;color:var(--tx);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;outline:none}
 input:focus,textarea:focus,select:focus{border-color:var(--acc)}
-textarea{resize:vertical;min-height:70px}
+textarea{resize:vertical;min-height:70px;font-size:16px;line-height:1.45}
+textarea.grow{min-height:0;overflow:hidden;resize:none}
+.lbl .dict{margin-left:auto}
 h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.01em}
 .wrap{max-width:560px;margin:0 auto;padding:12px 14px 24px}
 header.top{display:flex;align-items:flex-end;justify-content:space-between;padding:14px 16px 6px;max-width:560px;margin:0 auto}
@@ -285,9 +287,9 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="lbl"><span>Energy (morning)</span><b data-show="energy_am">–</b></div>
     <div class="scale" data-k="energy_am"></div>
     <div class="lbl"><span>Morning thoughts</span><button class="btn sm dict" data-dict="amThoughts">Talk</button></div>
-    <textarea id="amThoughts" rows="3" placeholder="What's on your mind this morning? Talk or type."></textarea>
-    <div class="lbl"><span>The one thing that makes today a success</span></div>
-    <input data-t="intention" placeholder="e.g. Ship the costing sheet before lunch">
+    <textarea id="amThoughts" class="grow" rows="3" placeholder="What's on your mind this morning? Talk or type."></textarea>
+    <div class="lbl"><span>The one thing that makes today a success</span><button class="btn sm dict" data-dict="tIntention">Talk</button></div>
+    <textarea id="tIntention" data-t="intention" class="grow" rows="2" placeholder="e.g. Ship the costing sheet before lunch"></textarea>
     <div class="sp"></div>
     <button class="btn pri full" id="amDone">Done</button>
     </div>
@@ -323,8 +325,8 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="scale s" id="pRs"></div>
     <div class="lbl"><span>What were you just doing?</span></div>
     <div class="ctx" id="pCtx"></div>
-    <div class="lbl"><span>What came before it?</span></div>
-    <input id="pNote" placeholder="e.g. 3 back-to-back stakeholder meetings">
+    <div class="lbl"><span>What came before it?</span><button class="btn sm dict" data-dict="pNote">Talk</button></div>
+    <textarea id="pNote" class="grow" rows="3" placeholder="e.g. 3 back-to-back stakeholder meetings. Talk or type."></textarea>
     <div class="sp"></div>
     <button class="btn pri full" id="pLog">Log pulse</button>
     </div>
@@ -358,10 +360,10 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="yn" data-yn="goal_moved"><button data-v="1">Yes, they moved</button><button data-v="0">No, held steady</button></div>
     <div class="lbl"><span>Hit this morning's "one thing"?</span></div>
     <div class="yn" data-yn="hit_target"><button data-v="1">Yes</button><button data-v="0">No</button></div>
-    <div class="lbl"><span>Win of the day</span></div>
-    <input data-t="win" placeholder="What went well">
-    <div class="lbl"><span>Grateful for</span></div>
-    <input data-t="gratitude" placeholder="One thing">
+    <div class="lbl"><span>Win of the day</span><button class="btn sm dict" data-dict="tWin">Talk</button></div>
+    <textarea id="tWin" data-t="win" class="grow" rows="2" placeholder="What went well"></textarea>
+    <div class="lbl"><span>Grateful for</span><button class="btn sm dict" data-dict="tGrat">Talk</button></div>
+    <textarea id="tGrat" data-t="gratitude" class="grow" rows="2" placeholder="One thing"></textarea>
     <div class="lbl" style="margin-top:16px"><span>Tonight's question</span><span class="tag" id="qTag"></span></div>
     <div id="qBody"></div>
     </div>
@@ -526,7 +528,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.8.1';
+var APP_VERSION = '1.8.2';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -770,7 +772,8 @@ function renderToday(){
   // scales
   $$('#v-today .scale').forEach(function(el){ var v=d[el.dataset.k]; $$('button',el).forEach(function(b){ b.classList.toggle('on', +b.dataset.v===v); }); });
   $$('#v-today [data-show]').forEach(function(el){ el.textContent = scaleWord(el.dataset.show, d[el.dataset.show]); });
-  $$('#v-today [data-t]').forEach(function(el){ if(document.activeElement!==el) el.value = d[el.dataset.t]||''; });
+  $$('#v-today [data-t]').forEach(function(el){ if(document.activeElement!==el && !(DICT.on && DICT.btn && DICT.btn.dataset.dict===el.id)) el.value = d[el.dataset.t]||''; });
+  setTimeout(growAll,0);
   var si=$('#slpIn'); if(document.activeElement!==si) si.value = d.sleep_hours!=null?d.sleep_hours:'';
   var at=$('#amThoughts'); if(document.activeElement!==at && !DICT.on) at.value = (d.log&&d.log.am_thoughts)||'';
   $('#slpV').textContent = d.sleep_hours!=null ? d.sleep_hours+' h' : '–';
@@ -880,7 +883,8 @@ function logPulse(){
   if(!PUL.e){ toast('Tap an energy score first'); return; }
   var now=new Date().toISOString(), note=$('#pNote').value.trim();
   S.entries.unshift({id:uuid(),date:todayKey(),kind:'pulse',transcript:note,analysis:{energy:PUL.e,revs:PUL.r,context:PUL.ctx,block:blockOf(now)},created_at:now,updated_at:now,_dirty:true});
-  PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; FOLD.pulse=true; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
+  if(DICT.on && DICT.btn) dictate($('#pNote'), DICT.btn);
+  PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; autoGrow($('#pNote')); FOLD.pulse=true; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
 }
 function tsOf(x){ return typeof x==='string'?x:(x&&x.at); }
 var LOCS=['Home','Office','Car','Café / out','Gym','Other'];
@@ -1098,6 +1102,9 @@ function setRecMode(m){ REC.mode=m; $$('#recSeg button').forEach(function(b){b.c
 function closeRec(){ stopMic(); $('#rec').classList.remove('on'); }
 var SRC = window.SpeechRecognition || window.webkitSpeechRecognition; var SR_OK = !!SRC;
 var DICT={on:false,sr:null,btn:null};
+function autoGrow(el){ if(!el||!el.classList.contains('grow')) return; el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+document.addEventListener('input',function(e){ if(e.target && e.target.tagName==='TEXTAREA') autoGrow(e.target); });
+function growAll(){ $$('textarea.grow').forEach(autoGrow); }
 function dictate(field, btn){
   if(DICT.on){ DICT.on=false; try{DICT.sr.stop();}catch(e){} btn.classList.remove('live'); btn.textContent='Talk'; return; }
   if(!SR_OK){ field.focus(); toast('Use the mic on your keyboard'); return; }
