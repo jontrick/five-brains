@@ -413,6 +413,7 @@ table.tod th{color:var(--mut);font-weight:500}
   <div class="card"><h2><i data-ic="alert"></i> Why days get missed <span class="tag">30 days</span></h2><div id="missWhy"></div></div>
   <div class="card"><h2><i data-ic="clock"></i> Your day, by the clock <span class="tag" id="todTag">30 days</span></h2><div id="todBox"></div></div>
   <div class="card"><h2><i data-ic="swap"></i> Drains vs chargers <span class="tag">avg energy</span></h2><div id="dcBox"></div></div>
+  <div class="card"><h2><i data-ic="cloud"></i> Weather vs you <span class="tag">actual, 60 days</span></h2><div id="wxBox"></div></div>
   <div class="card"><h2><i data-ic="brain"></i> 5Brains <span class="tag">read from your answers · 30d</span></h2><div id="brainTrend"></div></div>
   <div class="card"><h2><i data-ic="pulse"></i> Energy & mood <span class="tag">14 days</span></h2><svg class="chart" id="cEnergy"></svg>
     <div class="legend"><span><i style="background:var(--acc)"></i>Energy AM</span><span><i style="background:#5fa8e6"></i>Energy PM</span><span><i style="background:var(--acc2)"></i>Mood</span><span><i style="background:var(--warm)"></i>Stress</span></div></div>
@@ -445,6 +446,8 @@ table.tod th{color:var(--mut);font-weight:500}
     </div>
     <div class="lbl"><span>"Ate to plan" auto-ticks when Phoenix kcal is within ± (kcal)</span></div>
     <input type="number" id="sKcal" inputmode="numeric" step="50">
+    <div class="lbl"><span>Weather: use where I actually was (location, rounded to about 1 km)</span></div>
+    <div class="row"><select id="sLoc"><option value="1">On: weather follows my location</option><option value="0">Off: always use Brisbane</option></select><button class="btn sm" style="flex:none" id="sLocTest">Allow location</button></div>
   </div>
   <div class="card">
     <h2><i data-ic="checks"></i> Daily ticks</h2>
@@ -533,7 +536,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.9.0';
+var APP_VERSION = '1.10.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -588,7 +591,7 @@ function applySkin(id){
   r.setProperty('--on-acc', v[10]?'#ffffff':'#0d1117');
   var m=document.querySelector('meta[name=theme-color]'); if(m) m.setAttribute('content', v[1]);
 }
-var ICN={"mic": "<rect x=\"9\" y=\"3\" width=\"6\" height=\"11\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3\"/>", "heart": "<path d=\"M19.5 12.6 12 20l-7.5-7.4A5 5 0 1 1 12 6a5 5 0 1 1 7.5 6.6z\"/>", "bulb": "<path d=\"M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z\"/>", "sunrise": "<path d=\"M12 3v4M5.6 7.6 7 9M18.4 7.6 17 9M3 16h2M19 16h2M7 16a5 5 0 0 1 10 0M2 20h20\"/>", "flame": "<path d=\"M12 3c.8 3 4.5 5 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.1-3.6 2.2-4.5.1 1.7.9 2.8 2 3.1C11 8.5 11 5.5 12 3z\"/>", "drop": "<path d=\"M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z\"/>", "zap": "<path d=\"M13 2 4 14h7l-1 8 9-12h-7z\"/>", "battery": "<rect x=\"2\" y=\"7\" width=\"17\" height=\"10\" rx=\"2\"/><path d=\"M22 11v2M6 10.5v3M10 10.5v3\"/>", "walk": "<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"M9 21l2.2-6L9 12l1.5-4.5L15 11l3 1M8.5 12.5 6 14M13.5 16 15 21\"/>", "utensils": "<path d=\"M5 3v7a2.5 2.5 0 0 0 5 0V3M7.5 3v18M17 21V3c-2 1.5-3 4-3 7.5h3\"/>", "wind": "<path d=\"M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5M3 16h8\"/>", "compass": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m15.5 8.5-2 5-5 2 2-5z\"/>", "moon": "<path d=\"M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z\"/>", "checks": "<path d=\"M9 11l3 3 8-8\"/><path d=\"M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9\"/>", "file": "<path d=\"M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\"/><path d=\"M14 3v6h6M8 13h8M8 17h5\"/>", "calendar": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M3 10h18M8 3v4M16 3v4\"/>", "alert": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7.5v5.5M12 16.5h.01\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>", "swap": "<path d=\"M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4\"/>", "brain": "<path d=\"M9.5 4A2.5 2.5 0 0 0 7 6.5 3 3 0 0 0 4.5 11a3 3 0 0 0 1 5A3 3 0 0 0 9.5 20V4zM14.5 4A2.5 2.5 0 0 1 17 6.5a3 3 0 0 1 2.5 4.5 3 3 0 0 1-1 5 3 3 0 0 1-4 4V4z\"/>", "pulse": "<path d=\"M3 12h4l3-7 4 14 3-7h4\"/>", "bed": "<path d=\"M3 19V7M3 15h18v4M21 15v-2.5A2.5 2.5 0 0 0 18.5 10H11v5\"/><circle cx=\"7\" cy=\"12\" r=\"1.8\"/>", "scale": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M8 10a5.5 5.5 0 0 1 8 0l-3 3\"/>", "bars": "<path d=\"M5 20v-8M11 20V5M17 20v-5M3 20h18\"/>", "key": "<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"m11 12 9-9M16.5 6.5l2.5 2.5M14 9l2 2\"/>", "palette": "<path d=\"M12 3a9 9 0 0 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.3-.8-2.1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8z\"/><circle cx=\"7.5\" cy=\"11\" r=\".8\"/><circle cx=\"10\" cy=\"7\" r=\".8\"/><circle cx=\"14.5\" cy=\"7\" r=\".8\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/>", "db": "<ellipse cx=\"12\" cy=\"5.5\" rx=\"8\" ry=\"2.5\"/><path d=\"M4 5.5v13c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-13M4 12c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5\"/>", "sparkle": "<path d=\"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z\"/>", "camera": "<path d=\"M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z\"/><circle cx=\"12\" cy=\"13.5\" r=\"3.5\"/>", "tag": "<path d=\"M3 12V4h8l10 10-8 8z\"/><circle cx=\"7.5\" cy=\"8\" r=\"1.3\"/>"};
+var ICN={"mic": "<rect x=\"9\" y=\"3\" width=\"6\" height=\"11\" rx=\"3\"/><path d=\"M5 11a7 7 0 0 0 14 0M12 18v3\"/>", "heart": "<path d=\"M19.5 12.6 12 20l-7.5-7.4A5 5 0 1 1 12 6a5 5 0 1 1 7.5 6.6z\"/>", "bulb": "<path d=\"M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z\"/>", "sunrise": "<path d=\"M12 3v4M5.6 7.6 7 9M18.4 7.6 17 9M3 16h2M19 16h2M7 16a5 5 0 0 1 10 0M2 20h20\"/>", "flame": "<path d=\"M12 3c.8 3 4.5 5 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.1-3.6 2.2-4.5.1 1.7.9 2.8 2 3.1C11 8.5 11 5.5 12 3z\"/>", "drop": "<path d=\"M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z\"/>", "zap": "<path d=\"M13 2 4 14h7l-1 8 9-12h-7z\"/>", "battery": "<rect x=\"2\" y=\"7\" width=\"17\" height=\"10\" rx=\"2\"/><path d=\"M22 11v2M6 10.5v3M10 10.5v3\"/>", "walk": "<circle cx=\"13\" cy=\"4\" r=\"2\"/><path d=\"M9 21l2.2-6L9 12l1.5-4.5L15 11l3 1M8.5 12.5 6 14M13.5 16 15 21\"/>", "utensils": "<path d=\"M5 3v7a2.5 2.5 0 0 0 5 0V3M7.5 3v18M17 21V3c-2 1.5-3 4-3 7.5h3\"/>", "wind": "<path d=\"M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5M3 16h8\"/>", "compass": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m15.5 8.5-2 5-5 2 2-5z\"/>", "moon": "<path d=\"M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z\"/>", "checks": "<path d=\"M9 11l3 3 8-8\"/><path d=\"M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9\"/>", "file": "<path d=\"M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\"/><path d=\"M14 3v6h6M8 13h8M8 17h5\"/>", "calendar": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M3 10h18M8 3v4M16 3v4\"/>", "alert": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7.5v5.5M12 16.5h.01\"/>", "clock": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/>", "swap": "<path d=\"M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4\"/>", "brain": "<path d=\"M9.5 4A2.5 2.5 0 0 0 7 6.5 3 3 0 0 0 4.5 11a3 3 0 0 0 1 5A3 3 0 0 0 9.5 20V4zM14.5 4A2.5 2.5 0 0 1 17 6.5a3 3 0 0 1 2.5 4.5 3 3 0 0 1-1 5 3 3 0 0 1-4 4V4z\"/>", "pulse": "<path d=\"M3 12h4l3-7 4 14 3-7h4\"/>", "bed": "<path d=\"M3 19V7M3 15h18v4M21 15v-2.5A2.5 2.5 0 0 0 18.5 10H11v5\"/><circle cx=\"7\" cy=\"12\" r=\"1.8\"/>", "scale": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M8 10a5.5 5.5 0 0 1 8 0l-3 3\"/>", "bars": "<path d=\"M5 20v-8M11 20V5M17 20v-5M3 20h18\"/>", "key": "<circle cx=\"8\" cy=\"15\" r=\"4\"/><path d=\"m11 12 9-9M16.5 6.5l2.5 2.5M14 9l2 2\"/>", "palette": "<path d=\"M12 3a9 9 0 0 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.3-.8-2.1 0-.8.7-1.4 1.5-1.4H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8z\"/><circle cx=\"7.5\" cy=\"11\" r=\".8\"/><circle cx=\"10\" cy=\"7\" r=\".8\"/><circle cx=\"14.5\" cy=\"7\" r=\".8\"/>", "target": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"5\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/>", "db": "<ellipse cx=\"12\" cy=\"5.5\" rx=\"8\" ry=\"2.5\"/><path d=\"M4 5.5v13c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5v-13M4 12c0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5\"/>", "sparkle": "<path d=\"M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z\"/>", "camera": "<path d=\"M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z\"/><circle cx=\"12\" cy=\"13.5\" r=\"3.5\"/>", "cloud": "<path d=\"M7 18a4.5 4.5 0 0 1-.5-9 6 6 0 0 1 11.5 1.5A3.75 3.75 0 0 1 17.5 18z\"/>", "tag": "<path d=\"M3 12V4h8l10 10-8 8z\"/><circle cx=\"7.5\" cy=\"8\" r=\"1.3\"/>"};
 function ic(n,c){ return '<svg class="ic'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+(ICN[n]||'')+'</svg>'; }
 function hydrateIcons(root){ $$('[data-ic]',root).forEach(function(e){ e.outerHTML=ic(e.dataset.ic, e.className); }); }
 var DEFAULT_BRAINS = [
@@ -718,7 +721,8 @@ function renderHeader(){
   var t=todayKey(), hit=0, n=0;
   for(var i=1;i<=14;i++){ var k=addDays(t,-i); if(k<S.settings.start) break; n++; if(isPerfect(k)) hit++; }
   $('#hDay').textContent = niceDate(t);
-  $('#hDate').textContent = 'Best streak '+bestStreak()+(n?' · '+hit+'/'+n+' full days lately':'');
+  var yw=wxLine(t)||(wxLine(addDays(t,-1))?'Yesterday: '+wxLine(addDays(t,-1)):'');
+  $('#hDate').innerHTML = esc('Best streak '+bestStreak()+(n?' · '+hit+'/'+n+' full days lately':''))+(yw?'<br><span style="opacity:.85">'+esc(yw)+'</span>':'');
   $('#hStreak').textContent = streak();
   renderMiss();
 }
@@ -1177,9 +1181,69 @@ function saveEntry(reflect){
 }
 
 // ───────────────────────── reflection (Claude via proxy) ─────────────────────────
+// ───────── Places + actual weather ─────────
+// Where he was: sampled when the app opens/returns (only if location is already allowed) and
+// from walk routes. Rounded to 2 decimals (~1 km). Weather: Open-Meteo hourly for the hours
+// already past (modelled from observations, no key needed), matched hour-by-hour to where he was.
+var HOME_LL=[-27.47,153.02];
+function placesOn(k){ var d=S.days[k], L=(d&&d.log)||{}, out=(L.places||[]).slice();
+  (L.walk||[]).forEach(function(w){ if(w&&w.route&&w.route.length){ var r=w.route[Math.floor(w.route.length/2)]; out.push({at:w.at, ll:[+r[0].toFixed(2),+r[1].toFixed(2)]}); } });
+  return out.sort(function(a,b){ return a.at<b.at?-1:1; }); }
+function samplePlace(force){
+  return new Promise(function(res){
+    if(S.settings.trackLoc===false || !navigator.geolocation) return res(false);
+    var go=function(){ navigator.geolocation.getCurrentPosition(function(p){
+        var k=todayKey(), L=rlog(k), ll=[+p.coords.latitude.toFixed(2), +p.coords.longitude.toFixed(2)], pl=L.places||(L.places=[]), last=pl[pl.length-1];
+        var now=new Date().toISOString();
+        if(!last || last.ll[0]!==ll[0] || last.ll[1]!==ll[1] || (Date.parse(now)-Date.parse(last.at))>3*3600e3){ pl.push({at:now, ll:ll}); if(pl.length>40) pl.shift(); touchDay(k); }
+        res(true); }, function(){ res(false); }, {enableHighAccuracy:false, maximumAge:15*60e3, timeout:12000}); };
+    if(force) return go();
+    if(navigator.permissions && navigator.permissions.query) navigator.permissions.query({name:'geolocation'}).then(function(st){ if(st.state==='granted') go(); else res(false); }).catch(function(){ res(false); });
+    else res(false);
+  });
+}
+function placeAt(k,hour){ // the place he was at (most recent sample at or before that hour), else first of day, else home
+  var ps=placesOn(k), best=null;
+  ps.forEach(function(p){ if(brisHour(p.at)<=hour+0.5) best=p; });
+  return (best||ps[0]||{ll:HOME_LL}).ll;
+}
+var WX_CODES={0:'clear',1:'mostly clear',2:'partly cloudy',3:'overcast',45:'fog',48:'fog',51:'drizzle',53:'drizzle',55:'drizzle',61:'rain',63:'rain',65:'heavy rain',80:'showers',81:'showers',82:'heavy showers',95:'storm',96:'storm',99:'storm'};
+async function fetchWx(ll){
+  var u='https://api.open-meteo.com/v1/forecast?latitude='+ll[0]+'&longitude='+ll[1]+'&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,uv_index,weather_code&past_days=3&forecast_days=1&timezone=Australia%2FBrisbane';
+  var r=await fetch(u); if(!r.ok) throw new Error('weather '+r.status); return r.json();
+}
+async function logWeather(){
+  var t=todayKey(), hNow=bris().getHours(), todo=[];
+  for(var i=3;i>=0;i--){ var k=addDays(t,-i); if(k<S.settings.start) continue; var w=S.days[k]&&S.days[k].log&&S.days[k].log.weather;
+    if(i>0 && w && w.final) continue; if(i===0 && (hNow<20 || (w && Date.now()-Date.parse(w.at)<3*3600e3))) continue; todo.push(k); }
+  if(!todo.length || !navigator.onLine) return;
+  var cache={};
+  try{
+    for(var a=0;a<todo.length;a++){ var k=todo[a], hours=[];
+      var lastH = k===t ? hNow : 23;
+      for(var h=5;h<=lastH;h++){ var ll=placeAt(k,h), key=ll.join(','); if(!cache[key]) cache[key]=await fetchWx(ll);
+        var W=cache[key].hourly, idx=W.time.indexOf(k+'T'+String(h).padStart(2,'0')+':00'); if(idx<0) continue;
+        hours.push({h:h, ll:ll, t:W.temperature_2m[idx], feels:W.apparent_temperature[idx], rh:W.relative_humidity_2m[idx], rain:W.precipitation[idx], cloud:W.cloud_cover[idx], wind:W.wind_speed_10m[idx], uv:W.uv_index?W.uv_index[idx]:null, code:W.weather_code[idx]}); }
+      if(!hours.length) continue;
+      var day=hours.filter(function(x){return x.h>=7&&x.h<=18;}); if(!day.length) day=hours;
+      var mx=function(f){ return +Math.max.apply(0,day.map(function(x){return x[f];})).toFixed(1); }, av=function(f,arr){ arr=arr||day; return +(arr.reduce(function(s,x){return s+(+x[f]||0);},0)/arr.length).toFixed(1); };
+      var codes={}; day.forEach(function(x){ codes[x.code]=(codes[x.code]||0)+1; }); var top=Object.keys(codes).sort(function(x,y){return codes[y]-codes[x];})[0];
+      var places={}; hours.forEach(function(x){ places[x.ll.join(',')]=1; });
+      rlog(k).weather={ at:new Date().toISOString(), final: k!==t, places:Object.keys(places).length,
+        summary:{ max_c:mx('t'), feels_max_c:mx('feels'), min_c:+Math.min.apply(0,hours.map(function(x){return x.t;})).toFixed(1), humidity_avg:Math.round(av('rh')), rain_mm:+hours.reduce(function(s,x){return s+(+x.rain||0);},0).toFixed(1), cloud_avg:Math.round(av('cloud')), wind_avg_kmh:Math.round(av('wind')), uv_max:day[0].uv==null?null:mx('uv'), sky:WX_CODES[top]||'mixed' },
+        hours:hours.map(function(x){ return {h:x.h, t:x.t, feels:x.feels, rh:x.rh, rain:x.rain, cloud:x.cloud}; }) };
+      touchDay(k);
+    }
+    renderAll();
+  }catch(e){ console.warn('weather',e); }
+}
+function wxLine(k){ var w=S.days[k]&&S.days[k].log&&S.days[k].log.weather; if(!w) return ''; var s=w.summary;
+  return Math.round(s.feels_max_c)+'° feels-like max · '+s.humidity_avg+'% humidity · '+(s.rain_mm?s.rain_mm+' mm rain · ':'')+s.sky+(w.final?'':' (so far)'); }
+
 function ctxFor(k){
   var d=S.days[k]||{}, ph=S.phoenix[k]||{}, L=d.log||{};
   return { date:k, weekday: niceDate(k).split(' ')[0], scales:'all check-in scores are 1-5 (energy/mood/focus/sleep quality: 5 = best; stress and revs: 5 = maxed)',
+    weather_actual: (L.weather&&L.weather.summary)||null, weather_by_hour: (L.weather&&L.weather.hours)||null,
     full_day: isPerfect(k), missed_items: reqMissed(k), miss_reason: L.miss||null, week_miss_reflection: L.missWeek||null,
     energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:a.context||null, preceded_by:e.transcript||null}; }),
     recovery: { walks:(L.walk||[]).map(walkDesc), meals_and_snacks:mealsOn(k).map(function(m){ return (m.at?hhmm(m.at):'?')+' '+mealLabel(m); }), breathing:(L.breath||[]).map(hhmm) },
@@ -1199,7 +1263,7 @@ function brainsLens(){ return 'THE 5BRAINS LENS — assess everything against th
 var PROMPT_Q = SYS_BASE + 'Respond as a performance psychologist trained in the 5Brains model. Jon has answered one targeted question designed to probe a particular brain, without being told which. Infer the brain states from his actual words and the day context. Answers often reveal other brains too. Use the state "unclear" and confidence "low" when the answer is too thin; do not over-read. Keep the note to one or two sentences: specific, warm, direct.\nReturn ONLY JSON: {"primary":{"brain":"name","state":"balanced|under-served|over-firing|unclear","confidence":"low|medium|high"},"other_reads":[{"brain":"name","state":"","evidence":"short"}],"evidence":"short quote from his answer","note":"","follow_up":"one sharper follow-up question, or null"}';
 var PROMPT_FEEL = SYS_BASE + 'Respond as an experienced, warm but direct performance psychologist doing reflective practice. Frameworks, in priority order: (1) the 5Brains lens; (2) energy management (Loehr & Schwartz: physical, emotional, mental, purpose energy — identify what drained and what charged); (3) CBT thinking patterns; (4) ACT — especially the gap between the calm face shown and the revs underneath (the mask), and defusion from moving-goalpost thinking; (5) Lazarus stress appraisal — did this land as threat or challenge; (6) self-determination needs (autonomy, competence, relatedness); (7) emotional granularity — name feelings precisely. Always consider WHEN this was recorded (time of day, what preceded it, recent pulses, recovery done or skipped) — the time-of-day pattern is a core goal. This is reflection, not diagnosis — never label disorders. Be specific to what he actually said; quote short phrases as evidence. Name thinking patterns (e.g. all-or-nothing, catastrophising, mind-reading, should-statements) only where the words genuinely show them. Link to sleep/energy/training data when it plausibly explains something. Keep each field tight. If there is any indication of self-harm, suicidal thinking or being unsafe, set risk_flag true and write a caring risk_note encouraging him to contact Lifeline 13 11 14 or 000.\nReturn ONLY JSON: {"summary":"2-3 sentences","five_brains":{"driving":"brain name","read":[{"brain":"name","state":"over-firing|under-served|balanced|quiet","evidence":"short"}],"rebalance":"one sentence"},"emotions":[{"name":"","intensity":1-10}],"themes":[""],"thinking_patterns":[{"pattern":"","evidence":"short quote","challenge":"gentle counter-question or alternative view"}],"needs":[""],"strengths":[""],"body_link":"how sleep/energy/training/food/recovery may be feeding in, or null","energy_ledger":{"drains":[""],"chargers":[""]},"mask_gap":"comment on surface-calm vs revs-underneath if relevant, else null","appraisal":"threat|challenge|mixed","timing":"what the time of day and lead-up suggest","reframe":"","one_action":"one small concrete action for the next 24h","question":"one question to sit with","risk_flag":false,"risk_note":null}';
 var PROMPT_IDEA = SYS_BASE + 'Respond as a sharp, honest product strategist and thinking partner. Turn the rambling voice note into a crisp idea brief. Note the time of day and his energy state when the idea came — this feeds a map of his best creative windows. Be candid about weaknesses. Note how it connects to his other ventures or earlier ideas if relevant, and whether it competes for his limited time.\nReturn ONLY JSON: {"title":"","summary":"2 sentences","brains_check":[{"brain":"name","verdict":"how this idea looks through that brain (e.g. Red: what threat or risk does it trigger; Yellow: is there evidence; Blue: is the next action clear; Orange: who needs to trust it; Pink: what possibility it opens)"}],"core_insight":"","who_for":"","assumptions":[""],"risks":[""],"next_step":"smallest test this week","effort":"low|medium|high","excitement_vs_evidence":"one line on whether the energy is backed by evidence","captured_when":"time block + energy state at capture","connections":[""],"tags":[""]}';
-var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nAlso analyse missed days: count, the reasons he logged, the real pattern (e.g. a weekday, a sleep or meeting load that precedes misses) and one practical fix. Use his Sunday "common thread" answer if present.\nReturn ONLY JSON: {"headline":"one line","misses":{"count":0,"top_reasons":[""],"pattern":"","fix":""},"time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
+var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nAlso check whether the ACTUAL weather (heat, feels-like temperature, humidity, rain, cloud) lines up with his energy, sleep, mood, pulses or missed days; say so plainly if there is no clear link. Also analyse missed days: count, the reasons he logged, the real pattern (e.g. a weekday, a sleep or meeting load that precedes misses) and one practical fix. Use his Sunday "common thread" answer if present.\nReturn ONLY JSON: {"headline":"one line","misses":{"count":0,"top_reasons":[""],"pattern":"","fix":""},"weather":"one or two sentences on whether weather showed up in the data","time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
 
 async function callClaude(prompt, payload){
   var body = { model:S.settings.aiModel, max_tokens:2000,
@@ -1292,6 +1356,7 @@ function analysisHTML(e){
     if(a.connections&&a.connections.length) h+='<h3>Connections</h3>'+li(a.connections);
   } else {
     h+='<h3>Headline</h3><p><b>'+esc(a.headline)+'</b></p>';
+    if(a.weather) h+='<h3>Weather</h3><p>'+esc(a.weather)+'</p>';
     if(a.misses) h+='<h3>Missed days</h3><p>'+esc(a.misses.count)+' missed'+(a.misses.top_reasons&&a.misses.top_reasons.length?' · '+esc(a.misses.top_reasons.join(', ')):'')+'</p>'+(a.misses.pattern?'<p>'+esc(a.misses.pattern)+'</p>':'')+(a.misses.fix?'<div class="callout w"><b>Fix:</b> '+esc(a.misses.fix)+'</div>':'');
     var td=a.time_of_day; if(td){
       h+='<h3>Peak windows</h3>'+li(td.peak_windows)+'<h3>Slump windows</h3>'+li(td.slump_windows)+'<h3>Idea windows</h3>'+li(td.idea_windows);
@@ -1391,11 +1456,25 @@ function brainReadsHTML(list, light){
       '<div style="display:flex;height:8px;border-radius:99px;overflow:hidden;background:'+(light?'#eef0f4':'var(--card2)')+'"><i style="width:'+b.balanced/t*100+'%;background:'+cols.b+'"></i><i style="width:'+b.under/t*100+'%;background:'+cols.u+'"></i><i style="width:'+b.over/t*100+'%;background:'+cols.o+'"></i></div>'+
       '<div class="small '+(light?'muted':'muted')+'" style="margin-top:3px">'+b.balanced+' balanced · '+b.under+' under-served · '+b.over+' over-firing'+(b.last?' · latest: '+esc(b.last.note):'')+'</div></div>'; }).join('');
 }
+function wxBuckets(from,to){
+  var B=[['Under 25°',-99,25],['25–30°',25,30],['30–35°',30,35],['35°+',35,99]], out=B.map(function(b){return {label:b[0],lo:b[1],hi:b[2],n:0,e:[],m:[],p:[],miss:0};}), rain={n:0,e:[]}, dry={n:0,e:[]};
+  Object.keys(S.days).forEach(function(k){ if(k<from||k>to) return; var d=S.days[k], w=d.log&&d.log.weather; if(!w||!w.final) return;
+    var f=w.summary.feels_max_c, b=out.filter(function(x){return f>=x.lo&&f<x.hi;})[0]; if(!b) return; b.n++;
+    var pe=pulsesOn(k).map(function(e){return e.analysis&&e.analysis.energy;}).filter(Boolean);
+    [d.energy_am,d.energy_pm].concat(pe).forEach(function(v){ if(v) b.e.push(v); }); if(d.mood) b.m.push(d.mood); if(!isPerfect(k)) b.miss++;
+    var rr=w.summary.rain_mm>=2?rain:dry; rr.n++; [d.energy_am,d.energy_pm].concat(pe).forEach(function(v){ if(v) rr.e.push(v); }); });
+  var avg=function(a){ return a.length?+(a.reduce(function(x,y){return x+y;},0)/a.length).toFixed(1):null; };
+  return { buckets:out.map(function(b){ return {label:b.label,days:b.n,energy:avg(b.e),mood:avg(b.m),missed:b.miss}; }), rain:{days:rain.n,energy:avg(rain.e)}, dry:{days:dry.n,energy:avg(dry.e)} };
+}
 function renderTrends(){
   var ts=todSummary(30), tot=ts.by_block.reduce(function(a,b){return a+b.n;},0);
   $('#todTag').textContent=tot+' readings · 30d';
   $('#todBox').innerHTML = tot ? '<table class="tod"><tr><th>When</th><th>Energy</th><th>Revs</th><th>'+ic('bulb','sm mut')+'</th><th>'+ic('heart','sm mut')+'</th><th>'+ic('walk','sm mut')+'</th></tr>'+ts.by_block.map(function(b){ return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+(b.ideas||'')+'</td><td>'+(b.feelings||'')+'</td><td>'+(b.walks||'')+'</td></tr>'; }).join('')+'</table><p class="small muted" style="margin:8px 0 0">Energy from pulses and check-ins. Revs = what\'s running underneath. The icon columns count ideas, feelings and walks, so you can see when you record them. Needs ~2 weeks to mean much.</p>'
     : '<p class="muted small">Log a few energy pulses through the day and this fills in: your peak, slump and idea windows.</p>';
+  var WX=wxBuckets(addDays(todayKey(),-60),todayKey()), wn=WX.buckets.reduce(function(a,b){return a+b.days;},0);
+  $('#wxBox').innerHTML = wn ? '<table class="tod"><tr><th>Feels-like max</th><th>Days</th><th>Energy</th><th>Mood</th><th>Missed</th></tr>'+WX.buckets.map(function(b){ return '<tr><td>'+b.label+'</td><td>'+b.days+'</td><td>'+heat(b.energy)+'</td><td>'+heat(b.mood)+'</td><td>'+(b.days?b.missed:'')+'</td></tr>'; }).join('')+'</table>'+
+    '<p class="small muted" style="margin:8px 0 0">Rain days (2 mm+): energy '+(WX.rain.energy==null?'–':WX.rain.energy)+' over '+WX.rain.days+' days · dry days: '+(WX.dry.energy==null?'–':WX.dry.energy)+' over '+WX.dry.days+'. Actual weather where you were, logged each night.</p>'
+    : '<p class="small muted">Builds up automatically. Yesterday\'s actual weather is logged when you open the app each morning.</p>';
   $('#dcBox').innerHTML = ts.by_activity.length ? ts.by_activity.map(function(a){ return '<div class="bbar"><span class="nm" style="width:130px">'+esc(a.doing)+'</span><div class="prog"><i style="width:'+a.avg_energy*20+'%;background:'+(a.avg_energy>=3.5?'var(--ok)':a.avg_energy>=2.5?'var(--warm)':'var(--red)')+'"></i></div><b>'+a.avg_energy+'</b><span class="small muted">×'+a.n+'</span></div>'; }).join('') : '<p class="muted small">Tag what you were doing when you log a pulse.</p>';
   var t=todayKey(), g='', start=S.settings.start;
   var dow=(bris().getDay()+6)%7, first=addDays(t,-(dow+7*7));
@@ -1503,6 +1582,8 @@ function renderReport(){
   h+='<h3>Sleep</h3>'+svgChart([{c:'#7a63d8',data:col('sleep_hours')}],{labels:true,dp:1})+'<p class="muted small">Hours slept · avg '+fmt(R.sleep,' h')+', quality '+fmt(R.sleepQ)+' / 5</p>';
   h+='<h3>5Brains (inferred from targeted questions and journal)</h3>'+brainReadsHTML(R.brains,true);
   if(R.wStart) h+='<p>Bodyweight (Phoenix): '+(+R.wStart).toFixed(1)+' → '+(+R.wEnd).toFixed(1)+' kg</p>';
+  var RW=wxBuckets(R.from,R.to), rwn=RW.buckets.reduce(function(a,b){return a+b.days;},0);
+  h+='<h3>Weather vs energy (actual weather where Jon was)</h3>'+(rwn?'<table><tr><th>Feels-like max</th><th>Days</th><th>Avg energy</th><th>Avg mood</th><th>Missed days</th></tr>'+RW.buckets.map(function(b){return '<tr><td>'+b.label+'</td><td>'+b.days+'</td><td>'+heat(b.energy)+'</td><td>'+heat(b.mood)+'</td><td>'+(b.days?b.missed:'')+'</td></tr>';}).join('')+'</table><p class="muted small">Rain days (2 mm+) energy '+fmt(RW.rain.energy)+' vs dry '+fmt(RW.dry.energy)+'.</p>':'<p class="muted">No weather logged yet.</p>');
   h+='<h3>Habit completion</h3><table><tr><th>Tick</th><th>Type</th><th>Days</th><th>%</th></tr>'+R.habits.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+(x.req?'Required':'Bonus')+'</td><td>'+x.done+'/'+R.days+'</td><td>'+pctHeat(x.pct)+'</td></tr>';}).join('')+'</table>';
   var mt={}, mn=0; R.keys.forEach(function(k){ var d=S.days[k]; if(d&&d.log&&d.log.miss){ mn++; (d.log.miss.reasons||[]).forEach(function(r){ mt[r]=(mt[r]||0)+1; }); } });
   h+='<h3>Missed days: what got in the way</h3>'+(mn?'<table><tr><th>Reason</th><th>Days</th></tr>'+Object.keys(mt).sort(function(a,b){return mt[b]-mt[a];}).map(function(r){return '<tr><td>'+esc(r)+'</td><td>'+mt[r]+'</td></tr>';}).join('')+'</table><p class="muted small">'+mn+' missed days with a reason logged.</p>':'<p class="muted">No missed-day reasons logged.</p>');
@@ -1549,7 +1630,7 @@ function renderSettings(){
   $('#sStart').value=S.settings.start; $('#sWater').value=S.settings.water;
   $('#sReport').value=S.settings.reportDate||'';
   $('#sSnack').value=S.settings.snackT; $('#sWalk').value=S.settings.walkT; $('#sPulse').value=S.settings.pulseT;
-  $('#sKcal').value=S.settings.kcalTol;
+  $('#sKcal').value=S.settings.kcalTol; $('#sLoc').value=S.settings.trackLoc===false?'0':'1';
   $('#sAiUrl').value=S.settings.aiUrl; $('#sAiModel').value=S.settings.aiModel; $('#sAbout').value=S.settings.about||'';
   var he=$('#habEdit'); he.innerHTML='';
   S.habits.forEach(function(h,i){
@@ -1581,6 +1662,8 @@ function bindSettings(){
   on('#sWalk',function(v){ S.settings.walkT=Math.max(1,+v||1); });
   on('#sPulse',function(v){ S.settings.pulseT=Math.max(1,+v||3); });
   on('#sKcal',function(v){ S.settings.kcalTol=Math.max(0,+v||150); });
+  on('#sLoc',function(v){ S.settings.trackLoc=v==='1'; if(S.settings.trackLoc) samplePlace(true); });
+  $('#sLocTest').onclick=function(){ samplePlace(true).then(function(ok){ toast(ok?'Location on. Weather will follow where you are.':'Location blocked. Allow it for this app in iPhone Settings.'); }); };
   on('#sAiUrl',function(v){ S.settings.aiUrl=v.trim(); });
   on('#sAiModel',function(v){ S.settings.aiModel=v.trim(); });
   on('#sAbout',function(v){ S.settings.about=v; });
@@ -1685,7 +1768,8 @@ $$('nav.tabs button').forEach(function(b){ b.onclick=function(){ VIEW=b.dataset.
 function renderAll(){ renderHeader(); if(VIEW==='today') renderToday(); if(VIEW==='journal') renderJournal(); if(VIEW==='trends') renderTrends(); if(VIEW==='settings') renderSettings(); }
 
 hydrateIcons(document); applySkin(S.settings.skin); bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
-document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); } });
+samplePlace(false).then(function(){ logWeather(); });
+document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); samplePlace(false).then(function(){ logWeather(); }); } });
 window.addEventListener('online',function(){ fullSync(); });
 var _lastDay=todayKey(); setInterval(function(){ if(todayKey()!==_lastDay){ _lastDay=todayKey(); FOLD={}; renderAll(); } },60000);
 if('serviceWorker' in navigator){
