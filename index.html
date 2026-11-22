@@ -43,8 +43,9 @@ header.top{display:flex;align-items:flex-end;justify-content:space-between;paddi
 .row>*{flex:1}
 .lbl{font-size:12px;color:var(--mut);margin:10px 0 6px;display:flex;justify-content:space-between}
 .lbl b{color:var(--tx)}
-.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
-.scale button{height:34px;border-radius:8px;background:var(--card2);border:1px solid var(--line);font-size:13px;color:var(--mut)}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.scale button{height:46px;border-radius:10px;background:var(--card2);border:1px solid var(--line);font-size:15px;font-weight:650;color:var(--mut);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1}
+.scale button small{font-size:10px;font-weight:500;opacity:.85}
 .scale button.on{background:var(--acc);color:#0d1117;border-color:var(--acc);font-weight:700}
 .scale.p button.on{background:var(--acc2);border-color:var(--acc2)}
 .scale.s button.on{background:var(--warm);border-color:var(--warm)}
@@ -106,6 +107,20 @@ nav.tabs button.on{color:var(--acc)}
 .sheet .in{background:var(--bg);border-top:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow:auto;padding:16px 16px calc(var(--sa-b) + 20px);max-width:620px;margin:0 auto}
 .sheet .bar{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 12px}
 /* trends */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal i{aspect-ratio:1;border-radius:5px;background:var(--card2);border:1px solid var(--line);font-style:normal;font-size:9px;display:grid;place-items:center;color:var(--dim)}
+.cal i.p{background:var(--ok);border-color:var(--ok);color:#0d1117}
+.cal i.h{background:#4d3d1c;border-color:#6b5524;color:var(--warm)}
+.cal i.m{background:#3a2522;border-color:#5a332d;color:var(--red)}
+.cal i.t{outline:2px solid var(--acc);outline-offset:1px}
+.cal b{font-size:10px;color:var(--dim);text-align:center;font-weight:500}
+.miss{border:1px solid #5a332d;background:#1f1716}
+.chips.pick .chip{cursor:pointer;padding:7px 11px;font-size:13px}
+.chips.pick .chip.on{background:var(--acc2);color:#0d1117;border-color:var(--acc2);font-weight:600}
+.bottles{display:flex;gap:10px;margin:4px 0 10px}
+.bottle{flex:1;height:58px;border-radius:12px 12px 10px 10px;border:2px solid #3b5f78;position:relative;overflow:hidden;background:var(--card2)}
+.bottle i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#5fa8e6,#3d7fb8);transition:height .3s}
+.bottle span{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:700;z-index:1}
 .grid75{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
 .grid75 i{aspect-ratio:1;border-radius:3px;background:var(--card2);border:1px solid var(--line)}
 .grid75 i.p{background:var(--ok);border-color:var(--ok)}
@@ -199,7 +214,7 @@ table.tod th{color:var(--mut);font-weight:500}
 
 <header class="top">
   <div>
-    <div class="dayn" id="hDay">Day 1<small>/ 75</small></div>
+    <div class="dayn" id="hDay"></div>
     <div class="sub" id="hDate"></div>
   </div>
   <div class="streak"><b id="hStreak">0</b><div class="sub">day streak</div></div>
@@ -209,7 +224,7 @@ table.tod th{color:var(--mut);font-weight:500}
 
 <!-- ═════════ TODAY ═════════ -->
 <section class="view on" id="v-today">
-  <div id="strictBanner"></div>
+  <div id="missBox"></div>
 
   <div class="card" id="phCard">
     <h2>🔥 Phoenix <span class="tag" id="phStatus">offline</span></h2>
@@ -246,13 +261,12 @@ table.tod th{color:var(--mut);font-weight:500}
 
   <div class="card">
     <h2>💧 Water <span class="tag" id="wtTag"></span></h2>
-    <div class="prog"><i id="wtBar" style="width:0"></i></div>
-    <div class="lbl" style="margin-top:6px"><span id="wtTxt">0 / 3000 ml</span><span class="small" id="wtSrc"></span></div>
+    <div class="bottles" id="bottles"></div>
+    <div class="lbl" style="margin:0 0 8px"><span id="wtTxt"></span><span class="small" id="wtSrc"></span></div>
     <div class="row">
-      <button class="btn sm" data-w="250">+250</button>
-      <button class="btn sm" data-w="500">+500</button>
-      <button class="btn sm" data-w="750">+750</button>
-      <button class="btn sm" data-w="undo">Undo</button>
+      <button class="btn pri" data-w="1500">+ Bottle (1.5 L)</button>
+      <button class="btn sm" style="flex:.6" data-w="750">+ ½</button>
+      <button class="btn sm" style="flex:.6" data-w="undo">Undo</button>
     </div>
   </div>
 
@@ -347,17 +361,18 @@ table.tod th{color:var(--mut);font-weight:500}
 <!-- ═════════ TRENDS ═════════ -->
 <section class="view" id="v-trends">
   <div class="card">
-    <h2>🏁 Challenge <span class="tag" id="chTag"></span></h2>
-    <div class="grid75" id="grid75"></div>
-    <div class="legend"><span><i style="background:var(--ok)"></i>Perfect day</span><span><i style="background:#5a332d"></i>Missed</span><span><i style="background:var(--acc)"></i>Today</span></div>
+    <h2>📅 Consistency <span class="tag" id="chTag"></span></h2>
+    <div class="cal" id="cal"></div>
+    <div class="legend"><span><i style="background:var(--ok)"></i>All done</span><span><i style="background:#6b5524"></i>Partial</span><span><i style="background:#5a332d"></i>Missed</span></div>
   </div>
+  <div class="card"><h2>🧩 Why days get missed <span class="tag">30 days</span></h2><div id="missWhy"></div></div>
   <div class="card"><h2>🕐 Your day, by the clock <span class="tag" id="todTag">30 days</span></h2><div id="todBox"></div></div>
   <div class="card"><h2>🔌 Drains vs chargers <span class="tag">avg energy</span></h2><div id="dcBox"></div></div>
   <div class="card"><h2>🧠 5Brains <span class="tag">read from your answers · 30d</span></h2><div id="brainTrend"></div></div>
   <div class="card"><h2>⚡ Energy & mood <span class="tag">14 days</span></h2><svg class="chart" id="cEnergy"></svg>
     <div class="legend"><span><i style="background:var(--acc)"></i>Energy AM</span><span><i style="background:#5fa8e6"></i>Energy PM</span><span><i style="background:var(--acc2)"></i>Mood</span><span><i style="background:var(--warm)"></i>Stress</span></div></div>
   <div class="card"><h2>😴 Sleep <span class="tag">14 days</span></h2><svg class="chart" id="cSleep"></svg>
-    <div class="legend"><span><i style="background:var(--acc2)"></i>Hours</span><span><i style="background:var(--acc)"></i>Quality</span></div></div>
+    <div class="legend"><span><i style="background:var(--acc2)"></i>Hours</span><span id="slpQAvg"></span></div></div>
   <div class="card"><h2>⚖️ Bodyweight <span class="tag">30 days</span></h2><svg class="chart" id="cWeight"></svg><div class="small muted" id="wSummary"></div></div>
   <div class="card"><h2>📊 Habit hit-rate <span class="tag">14 days</span></h2><div id="hitRate"></div></div>
 </section>
@@ -369,14 +384,11 @@ table.tod th{color:var(--mut);font-weight:500}
     <div id="authBox"></div>
   </div>
   <div class="card">
-    <h2>🏁 Challenge</h2>
-    <div class="lbl"><span>Start date</span></div><input type="date" id="sStart">
-    <div class="row" style="margin-top:8px">
-      <div><div class="lbl"><span>Length (days)</span></div><input type="number" id="sLen" inputmode="numeric"></div>
-      <div><div class="lbl"><span>Water target (ml)</span></div><input type="number" id="sWater" inputmode="numeric" step="250"></div>
+    <h2>🎯 Habits & targets</h2>
+    <div class="row">
+      <div><div class="lbl"><span>Tracking since</span></div><input type="date" id="sStart"></div>
+      <div><div class="lbl"><span>Water target (ml)</span></div><input type="number" id="sWater" inputmode="numeric" step="750"></div>
     </div>
-    <div class="lbl"><span>Strict mode (75 Hard rules: a missed day offers a reset to Day 1)</span></div>
-    <select id="sStrict"><option value="0">Off — keep counting</option><option value="1">On</option></select>
     <div class="row" style="margin-top:8px">
       <div><div class="lbl"><span>Snacks / day</span></div><input type="number" id="sSnack" inputmode="numeric"></div>
       <div><div class="lbl"><span>Walks / day</span></div><input type="number" id="sWalk" inputmode="numeric"></div>
@@ -457,7 +469,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.3.1';
+var APP_VERSION = '1.4.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -516,7 +528,7 @@ function rlog(k){ var d=day(k); if(!d.log) d.log={}; ['walk','snack','breath'].f
 var S = load();
 function blank(){
   return {
-    settings:{ start: todayKey(), len:75, water:3000, strict:false, kcalTol:150,
+    settings:{ start: todayKey(), water:4500, kcalTol:150,
       aiUrl:'https://phoenix-coach.jon-d87.workers.dev', aiModel:'claude-sonnet-4-5', reportDate:'2026-12-16', reportAI:null, snackT:3, walkT:1, pulseT:3,
       about:'From my EPP 5Brains debrief (David Munro): Core theme is energy efficiency — performance = energy x capability; capability is constant, energy fluctuates. Goal: same or better outcome for less energy, finish with 20% in the tank. Observed: I read rooms well and build real relationships, but multi-stakeholder settings drain the battery (energy cost, not capability). I look calm on the surface while running high revs underneath — keeping the mask on for the team is a big drain. My goals reset upward mid-day so I finish feeling I missed. Focus 1: protect energy via the diary — review a day ahead, break up draining back-to-backs, follow heavy meetings with energising ones, walk-and-talk 1-on-1s when low. Focus 2: daily active recovery — 7-min walk, protein/carb snack 3-4x/day, regular water, horizon in view, 4-in/6-out breathing x4. Habits: log what precedes highs and lows; invite the team to flag when I look flat or at my best.' },
     habits: JSON.parse(JSON.stringify(DEFAULT_HABITS)),
@@ -527,13 +539,21 @@ function blank(){
     phoenix:{},   // date -> accountability_day row
     entries:[],   // {id,date,kind,transcript,analysis,created_at,updated_at,_dirty}
     dirty:{days:{},water:{}},
-    lastSync:null
+    lastSync:null, scale5:true
   };
 }
 function load(){
-  try{ var s = JSON.parse(localStorage.getItem(LS)); if(s && s.settings){ var b = blank();
+  try{ var s = JSON.parse(localStorage.getItem(LS)); if(s && s.settings){ var b = blank(); var needScale5 = !s.scale5;
     for(var k in b) if(!(k in s)) s[k]=b[k];
     for(var k2 in b.settings) if(!(k2 in s.settings)) s.settings[k2]=b.settings[k2];
+    if(needScale5){ // v1.4: move all check-in scales from 1–10 to 1–5
+      var now=new Date().toISOString(), half=function(v){ return v==null||v===''?v:Math.max(1,Math.min(5,Math.round(+v/2))); };
+      s.dirty=s.dirty||{days:{},water:{}};
+      Object.keys(s.days||{}).forEach(function(k){ var d=s.days[k]; ['sleep_quality','energy_am','energy_pm','mood','stress','focus'].forEach(function(f){ if(d[f]!=null) d[f]=half(d[f]); }); d.updated_at=now; s.dirty.days[k]=1; });
+      (s.entries||[]).forEach(function(e){ if(e.kind==='pulse'&&e.analysis){ e.analysis.energy=half(e.analysis.energy); e.analysis.revs=half(e.analysis.revs); e.updated_at=now; e._dirty=true; } });
+      if(s.settings.water===3000) s.settings.water=4500;
+      s.scale5=true;
+    }
     (s.habits||[]).forEach(function(h){ if(h.auto==='brains'){ h.id='q'; h.name='Today\'s question'; h.auto='question'; } });
     return s; } }catch(e){}
   return blank();
@@ -592,28 +612,61 @@ function ask(msg, yes){ return new Promise(function(res){ var m=$('#ask'); $('#a
   $('#askYes').onclick=function(){done(true);}; $('#askNo').onclick=function(){done(false);}; }); }
 var _tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('on');},2200); }
 
+function bestStreak(){ var b=0,c=0; rangeKeys(S.settings.start,todayKey()).forEach(function(k){ if(isPerfect(k)){c++; b=Math.max(b,c);} else c=0; }); return b; }
+function reqMissed(k){ return S.habits.filter(function(h){return h.req && !habitDone(h,k);}).map(function(h){return h.name;}); }
 function renderHeader(){
-  var n=dayNum(), L=+S.settings.len||75;
-  $('#hDay').innerHTML = (n<1?'Starts '+esc(niceDate(S.settings.start)):'Day '+n+'<small>/ '+L+'</small>');
-  $('#hDate').textContent = niceDate(todayKey());
+  var t=todayKey(), hit=0, n=0;
+  for(var i=1;i<=14;i++){ var k=addDays(t,-i); if(k<S.settings.start) break; n++; if(isPerfect(k)) hit++; }
+  $('#hDay').textContent = niceDate(t);
+  $('#hDate').textContent = 'Best streak '+bestStreak()+(n?' · '+hit+'/'+n+' full days lately':'');
   $('#hStreak').textContent = streak();
-  var sb=$('#strictBanner'); sb.innerHTML='';
-  if(S.settings.strict && n>1){
-    var y=addDays(todayKey(),-1);
-    if(diffDays(S.settings.start,y)>=0 && !isPerfect(y)){
-      sb.innerHTML='<div class="banner">Strict mode: yesterday wasn\'t a perfect day. <button class="btn sm" id="resetBtn" style="margin-left:6px">Restart at Day 1</button> <button class="btn sm" id="fixBtn">Fix yesterday</button></div>';
-      $('#resetBtn').onclick=async function(){ if(await ask('Restart the challenge from today?','Restart')){ S.settings.start=todayKey(); save(); renderAll(); toast('Day 1. Go.'); } };
-      $('#fixBtn').onclick=function(){ openDayEditor(y); };
-    }
-  }
+  renderMiss();
 }
-
+var MISS_REASONS=['Work ran over','Low energy','Poor sleep','Forgot','Social / family','Travel','Sick','Chose to skip','Something else'];
+var MISS_SEL=[];
+function pendingMiss(){
+  var t=todayKey();
+  for(var i=7;i>=1;i--){ var k=addDays(t,-i); if(k<S.settings.start) continue;
+    var d=S.days[k]; if(isPerfect(k)) continue; if(d&&d.log&&d.log.miss) continue; return k; }
+  return null;
+}
+function isSunday(){ return bris().getDay()===0; }
+function weekMisses(){ var t=todayKey(), out=[]; for(var i=1;i<=7;i++){ var k=addDays(t,-i); if(k<S.settings.start) continue; if(!isPerfect(k)) out.push({k:k, miss:(S.days[k]&&S.days[k].log&&S.days[k].log.miss)||null}); } return out; }
+function renderMiss(){
+  var box=$('#missBox'); if(!box) return; var k=pendingMiss(), h='';
+  if(k){
+    var missed=reqMissed(k);
+    h+='<div class="card miss"><h2>🧩 '+esc(niceDate(k))+' wasn\'t a full day</h2><p class="small muted" style="margin:0 0 8px">Missed: '+esc(missed.join(', ')||'–')+'</p>'+
+      '<div class="lbl" style="margin-top:0"><span>What got in the way?</span></div><div class="chips pick" id="mChips">'+MISS_REASONS.map(function(r){return '<span class="chip'+(MISS_SEL.indexOf(r)>=0?' on':'')+'">'+esc(r)+'</span>';}).join('')+'</div>'+
+      '<input id="mNote" placeholder="Anything else? (optional)" style="margin-top:8px">'+
+      '<div class="row" style="margin-top:8px"><button class="btn sm" style="flex:none" id="mFix">I did some, fix ticks</button><button class="btn pri" id="mSave">Save</button></div></div>';
+  }
+  var t=todayKey(), L=(S.days[t]&&S.days[t].log)||{}, wm=weekMisses();
+  if(isSunday() && wm.length && !(L.missWeek&&L.missWeek.answer)){
+    var tally={}; wm.forEach(function(m){ ((m.miss&&m.miss.reasons)||['(no reason logged)']).forEach(function(r){ tally[r]=(tally[r]||0)+1; }); });
+    h+='<div class="card"><h2>🧭 Week check: '+wm.length+' missed day'+(wm.length>1?'s':'')+'</h2><div class="chips" style="margin-bottom:8px">'+Object.keys(tally).map(function(r){return '<span class="chip">'+esc(r)+' ×'+tally[r]+'</span>';}).join('')+'</div>'+
+      '<p class="qtext" style="font-size:16px">Looking at these, what\'s the real common thread, and what would stop it next week?</p><textarea id="wkAns" rows="3" placeholder="Type, or use the 🎤 on your keyboard"></textarea><div class="sp"></div><button class="btn pri full" id="wkSave">Save</button></div>';
+  }
+  box.innerHTML=h;
+  if(k){
+    $$('#mChips .chip').forEach(function(c){ c.onclick=function(){ var r=c.textContent, i=MISS_SEL.indexOf(r); if(i>=0) MISS_SEL.splice(i,1); else MISS_SEL.push(r); c.classList.toggle('on'); }; });
+    $('#mSave').onclick=function(){ if(!MISS_SEL.length && !$('#mNote').value.trim()){ toast('Pick a reason or add a note'); return; }
+      rlog(k).miss={reasons:MISS_SEL.slice(), note:$('#mNote').value.trim()||null, missed:reqMissed(k), at:new Date().toISOString()}; MISS_SEL=[]; touchDay(k); renderHeader(); toast('Logged'); };
+    $('#mFix').onclick=function(){ openDayEditor(k); };
+  }
+  var ws=$('#wkSave'); if(ws) ws.onclick=function(){ var a=$('#wkAns').value.trim(); if(a.length<2){ toast('Answer first'); return; } rlog(t).missWeek={answer:a, misses:wm.length, at:new Date().toISOString()}; touchDay(t); renderHeader(); toast('Saved. It feeds your weekly review.'); };
+}
+var SL={ energy:['Empty','Low','OK','Good','Full'], sleep_quality:['Awful','Poor','OK','Good','Great'], mood:['Low','Flat','OK','Good','Great'],
+  stress:['Calm','Mild','Some','High','Maxed'], revs:['Idle','Ticking','Busy','High','Redline'], focus:['Scattered','Drifting','OK','Sharp','Locked']};
+function slOf(k){ return SL[k] || (/^energy/.test(k)?SL.energy:SL.mood); }
+function scaleWord(k,v){ return v?v+' · '+slOf(k)[v-1]:'–'; }
+function fillScale(el,k){ for(var i=1;i<=5;i++){ var b=document.createElement('button'); b.dataset.v=i; b.innerHTML=i+'<small>'+slOf(k)[i-1]+'</small>'; el.appendChild(b); } }
 function buildScales(){
   $$('.scale[data-k]').forEach(function(el){
     if(el.children.length) return;
-    for(var i=1;i<=10;i++){ var b=document.createElement('button'); b.textContent=i; b.dataset.v=i; el.appendChild(b); }
+    fillScale(el, el.dataset.k);
     el.addEventListener('click',function(e){
-      var v=+e.target.dataset.v; if(!v) return; var k=el.dataset.k, d=day();
+      var t=e.target.closest('button'); var v=t?+t.dataset.v:0; if(!v) return; var k=el.dataset.k, d=day();
       d[k] = (d[k]===v) ? null : v; if(/^energy_|^mood$|^stress$|^focus$/.test(k)){ rlog().times[k]=new Date().toISOString(); } touchDay(); renderToday();
     });
   });
@@ -623,7 +676,7 @@ function renderToday(){
   var k=todayKey(), d=day(k), ph=S.phoenix[k];
   // scales
   $$('#v-today .scale').forEach(function(el){ var v=d[el.dataset.k]; $$('button',el).forEach(function(b){ b.classList.toggle('on', +b.dataset.v===v); }); });
-  $$('#v-today [data-show]').forEach(function(el){ var v=d[el.dataset.show]; el.textContent = v?v+'/10':'–'; });
+  $$('#v-today [data-show]').forEach(function(el){ el.textContent = scaleWord(el.dataset.show, d[el.dataset.show]); });
   $$('#v-today [data-t]').forEach(function(el){ if(document.activeElement!==el) el.value = d[el.dataset.t]||''; });
   var si=$('#slpIn'); if(document.activeElement!==si) si.value = d.sleep_hours!=null?d.sleep_hours:'';
   $('#slpV').textContent = d.sleep_hours!=null ? d.sleep_hours+' h' : '–';
@@ -631,8 +684,10 @@ function renderToday(){
   setTag('#pmTag', autoVal({auto:'pm_checkin'},k));
   // water
   var ml=waterMl(k), tg=+S.settings.water||3000;
-  $('#wtBar').style.width = Math.min(100, ml/tg*100)+'%';
-  $('#wtTxt').textContent = Math.round(ml)+' / '+tg+' ml';
+  var nb=Math.max(1,Math.round(tg/1500)), bh='';
+  for(var bi=0;bi<nb;bi++){ var f=Math.max(0,Math.min(1,(ml-bi*1500)/1500)); bh+='<div class="bottle"><i style="height:'+(f*100)+'%"></i><span>'+(f>=1?'✓':(f>0?Math.round(f*100)+'%':''))+'</span></div>'; }
+  $('#bottles').innerHTML=bh;
+  $('#wtTxt').textContent = (+(ml/1000).toFixed(2))+' / '+(tg/1000)+' L · '+Math.floor(ml/1500)+' of '+nb+' bottles';
   var ws=S.water[k]; $('#wtSrc').textContent = ws && ws.source==='phoenix' ? 'synced from Phoenix' : '';
   setTag('#wtTag', ml>=tg);
   // habits
@@ -716,8 +771,8 @@ async function readQuestion(k){
 }
 var PUL={e:null,r:null,ctx:null};
 function renderPulse(){
-  [['#pEs','e','#pE'],['#pRs','r','#pR']].forEach(function(x){ var el=$(x[0]); if(!el.children.length){ for(var i=1;i<=10;i++){ var b=document.createElement('button'); b.textContent=i; b.dataset.v=i; el.appendChild(b);} el.onclick=function(ev){ var v=+ev.target.dataset.v; if(!v) return; PUL[x[1]]=PUL[x[1]]===v?null:v; renderPulse(); }; }
-    $$('button',el).forEach(function(b){ b.classList.toggle('on',+b.dataset.v===PUL[x[1]]); }); $(x[2]).textContent=PUL[x[1]]?PUL[x[1]]+'/10':'–'; });
+  [['#pEs','e','#pE','energy'],['#pRs','r','#pR','revs']].forEach(function(x){ var el=$(x[0]); if(!el.children.length){ fillScale(el,x[3]); el.onclick=function(ev){ var t=ev.target.closest('button'); var v=t?+t.dataset.v:0; if(!v) return; PUL[x[1]]=PUL[x[1]]===v?null:v; renderPulse(); }; }
+    $$('button',el).forEach(function(b){ b.classList.toggle('on',+b.dataset.v===PUL[x[1]]); }); $(x[2]).textContent=scaleWord(x[3],PUL[x[1]]); });
   var c=$('#pCtx'); if(!c.children.length){ CONTEXTS.forEach(function(t){ var b=document.createElement('button'); b.textContent=t; b.onclick=function(){ PUL.ctx=PUL.ctx===t?null:t; renderPulse(); }; c.appendChild(b); }); }
   $$('button',c).forEach(function(b){ b.classList.toggle('on',b.textContent===PUL.ctx); });
   var ps=pulsesOn(todayKey()); $('#plTag').textContent=ps.length+'/'+(+S.settings.pulseT||3); $('#plTag').className='tag'+(ps.length>=(+S.settings.pulseT||3)?' ok':'');
@@ -841,7 +896,8 @@ function saveEntry(reflect){
 // ───────────────────────── reflection (Claude via proxy) ─────────────────────────
 function ctxFor(k){
   var d=S.days[k]||{}, ph=S.phoenix[k]||{}, L=d.log||{};
-  return { date:k, weekday: niceDate(k).split(' ')[0], challenge_day: diffDays(S.settings.start,k)+1,
+  return { date:k, weekday: niceDate(k).split(' ')[0], scales:'all check-in scores are 1-5 (energy/mood/focus/sleep quality: 5 = best; stress and revs: 5 = maxed)',
+    full_day: isPerfect(k), missed_items: reqMissed(k), miss_reason: L.miss||null, week_miss_reflection: L.missWeek||null,
     energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:a.context||null, preceded_by:e.transcript||null}; }),
     recovery: { walks:(L.walk||[]).map(hhmm), snacks:(L.snack||[]).map(hhmm), breathing:(L.breath||[]).map(hhmm) },
     checkin_times: Object.keys(L.times||{}).reduce(function(o,x){ o[x]=hhmm(L.times[x]); return o; },{}),
@@ -859,7 +915,7 @@ function brainsLens(){ return 'THE 5BRAINS LENS — assess everything against th
 var PROMPT_Q = SYS_BASE + 'Respond as a performance psychologist trained in the 5Brains model. Jon has answered one targeted question designed to probe a particular brain, without being told which. Infer the brain states from his actual words and the day context. Answers often reveal other brains too. Use the state "unclear" and confidence "low" when the answer is too thin; do not over-read. Keep the note to one or two sentences: specific, warm, direct.\nReturn ONLY JSON: {"primary":{"brain":"name","state":"balanced|under-served|over-firing|unclear","confidence":"low|medium|high"},"other_reads":[{"brain":"name","state":"","evidence":"short"}],"evidence":"short quote from his answer","note":"","follow_up":"one sharper follow-up question, or null"}';
 var PROMPT_FEEL = SYS_BASE + 'Respond as an experienced, warm but direct performance psychologist doing reflective practice. Frameworks, in priority order: (1) the 5Brains lens; (2) energy management (Loehr & Schwartz: physical, emotional, mental, purpose energy — identify what drained and what charged); (3) CBT thinking patterns; (4) ACT — especially the gap between the calm face shown and the revs underneath (the mask), and defusion from moving-goalpost thinking; (5) Lazarus stress appraisal — did this land as threat or challenge; (6) self-determination needs (autonomy, competence, relatedness); (7) emotional granularity — name feelings precisely. Always consider WHEN this was recorded (time of day, what preceded it, recent pulses, recovery done or skipped) — the time-of-day pattern is a core goal. This is reflection, not diagnosis — never label disorders. Be specific to what he actually said; quote short phrases as evidence. Name thinking patterns (e.g. all-or-nothing, catastrophising, mind-reading, should-statements) only where the words genuinely show them. Link to sleep/energy/training data when it plausibly explains something. Keep each field tight. If there is any indication of self-harm, suicidal thinking or being unsafe, set risk_flag true and write a caring risk_note encouraging him to contact Lifeline 13 11 14 or 000.\nReturn ONLY JSON: {"summary":"2-3 sentences","five_brains":{"driving":"brain name","read":[{"brain":"name","state":"over-firing|under-served|balanced|quiet","evidence":"short"}],"rebalance":"one sentence"},"emotions":[{"name":"","intensity":1-10}],"themes":[""],"thinking_patterns":[{"pattern":"","evidence":"short quote","challenge":"gentle counter-question or alternative view"}],"needs":[""],"strengths":[""],"body_link":"how sleep/energy/training/food/recovery may be feeding in, or null","energy_ledger":{"drains":[""],"chargers":[""]},"mask_gap":"comment on surface-calm vs revs-underneath if relevant, else null","appraisal":"threat|challenge|mixed","timing":"what the time of day and lead-up suggest","reframe":"","one_action":"one small concrete action for the next 24h","question":"one question to sit with","risk_flag":false,"risk_note":null}';
 var PROMPT_IDEA = SYS_BASE + 'Respond as a sharp, honest product strategist and thinking partner. Turn the rambling voice note into a crisp idea brief. Note the time of day and his energy state when the idea came — this feeds a map of his best creative windows. Be candid about weaknesses. Note how it connects to his other ventures or earlier ideas if relevant, and whether it competes for his limited time.\nReturn ONLY JSON: {"title":"","summary":"2 sentences","brains_check":[{"brain":"name","verdict":"how this idea looks through that brain (e.g. Red: what threat or risk does it trigger; Yellow: is there evidence; Blue: is the next action clear; Orange: who needs to trust it; Pink: what possibility it opens)"}],"core_insight":"","who_for":"","assumptions":[""],"risks":[""],"next_step":"smallest test this week","effort":"low|medium|high","excitement_vs_evidence":"one line on whether the energy is backed by evidence","captured_when":"time block + energy state at capture","connections":[""],"tags":[""]}';
-var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nReturn ONLY JSON: {"headline":"one line","time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
+var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nAlso analyse missed days: count, the reasons he logged, the real pattern (e.g. a weekday, a sleep or meeting load that precedes misses) and one practical fix. Use his Sunday "common thread" answer if present.\nReturn ONLY JSON: {"headline":"one line","misses":{"count":0,"top_reasons":[""],"pattern":"","fix":""},"time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
 
 async function callClaude(prompt, payload){
   var body = { model:S.settings.aiModel, max_tokens:2000,
@@ -952,6 +1008,7 @@ function analysisHTML(e){
     if(a.connections&&a.connections.length) h+='<h3>Connections</h3>'+li(a.connections);
   } else {
     h+='<h3>Headline</h3><p><b>'+esc(a.headline)+'</b></p>';
+    if(a.misses) h+='<h3>Missed days</h3><p>'+esc(a.misses.count)+' missed'+(a.misses.top_reasons&&a.misses.top_reasons.length?' · '+esc(a.misses.top_reasons.join(', ')):'')+'</p>'+(a.misses.pattern?'<p>'+esc(a.misses.pattern)+'</p>':'')+(a.misses.fix?'<div class="callout w"><b>Fix:</b> '+esc(a.misses.fix)+'</div>':'');
     var td=a.time_of_day; if(td){
       h+='<h3>Peak windows</h3>'+li(td.peak_windows)+'<h3>Slump windows</h3>'+li(td.slump_windows)+'<h3>Idea windows</h3>'+li(td.idea_windows);
       h+='<h3>Energy ledger</h3><div class="row" style="align-items:flex-start"><div><div class="small" style="color:var(--red)">Drains</div>'+li(td.drains)+'</div><div><div class="small" style="color:var(--ok)">Chargers</div>'+li(td.chargers)+'</div></div>';
@@ -971,7 +1028,7 @@ var SHEET_ID=null;
 function openEntry(id){
   var e=S.entries.find(function(x){return x.id===id;}); if(!e) return; SHEET_ID=id;
   var h='<div class="row" style="margin-bottom:8px"><div><b>'+ICON[e.kind]+' '+esc(e.kind[0].toUpperCase()+e.kind.slice(1))+'</b><div class="small muted">'+esc(niceDate(e.date))+' · '+new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'</div></div><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
-  if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+(pa.energy||'–')+'</b>/10 · revs underneath <b>'+(pa.revs||'–')+'</b>/10<br>'+esc(pa.context||'')+'</p>'; }
+  if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+scaleWord('energy',pa.energy)+'</b> · revs underneath <b>'+scaleWord('revs',pa.revs)+'</b><br>'+esc(pa.context||'')+'</p>'; }
   if(e.kind==='feelings'||e.kind==='ideas'||e.kind==='pulse') h+='<details'+(e.analysis?'':' open')+'><summary class="small muted" style="margin:6px 0">Transcript</summary><textarea id="shTx" rows="6">'+esc(e.transcript)+'</textarea></details>';
   if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting…</p>';
   h+=analysisHTML(e);
@@ -1027,7 +1084,8 @@ function todSummary(nDays){
   return { by_block: BLOCKS.map(function(b){ var g=agg[b[2]]; return {block:b[2], avg_energy:avg(g.e), avg_revs:avg(g.r), n:g.e.length, ideas:g.ideas, feelings:g.feelings, walks:g.walks}; }),
     by_activity: Object.keys(ctx).map(function(c){ return {doing:c, avg_energy:avg(ctx[c]), n:ctx[c].length}; }).sort(function(a,b){return b.avg_energy-a.avg_energy;}) };
 }
-function heat(v,inv){ if(v==null) return '<span class="muted">–</span>'; var x=inv?11-v:v; var c=x>=7.5?'#7cc48a':x>=5.5?'#e6cf5c':x>=4?'#e89a5a':'#e07a6e'; return '<span class="cell" style="background:'+c+'">'+v+'</span>'; }
+function pctHeat(p){ var c=p>=80?'#7cc48a':p>=60?'#e6cf5c':p>=40?'#e89a5a':'#e07a6e'; return '<span class="cell" style="background:'+c+'">'+p+'%</span>'; }
+function heat(v,inv){ if(v==null) return '<span class="muted">–</span>'; var x=inv?6-v:v; var c=x>=3.8?'#7cc48a':x>=3?'#e6cf5c':x>=2.2?'#e89a5a':'#e07a6e'; return '<span class="cell" style="background:'+c+'">'+v+'</span>'; }
 function brainReads(from,to){
   var out={}; S.brains.forEach(function(b){ out[b.id]={name:b.name,job:b.job,color:b.color,balanced:0,under:0,over:0,unclear:0,n:0,last:null}; });
   function add(id,state,note,k){ var o=out[id]; if(!o) return; state=String(state||'').toLowerCase(); o.n++;
@@ -1054,16 +1112,22 @@ function renderTrends(){
   $('#todTag').textContent=tot+' readings · 30d';
   $('#todBox').innerHTML = tot ? '<table class="tod"><tr><th>When</th><th>Energy</th><th>Revs</th><th>💡</th><th>🫀</th><th>🚶</th></tr>'+ts.by_block.map(function(b){ return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+(b.ideas||'')+'</td><td>'+(b.feelings||'')+'</td><td>'+(b.walks||'')+'</td></tr>'; }).join('')+'</table><p class="small muted" style="margin:8px 0 0">Energy from pulses and check-ins. Revs = what\'s running underneath. 💡 ideas and 🫀 feelings show when you record them. Needs ~2 weeks to mean much.</p>'
     : '<p class="muted small">Log a few energy pulses through the day and this fills in: your peak, slump and idea windows.</p>';
-  $('#dcBox').innerHTML = ts.by_activity.length ? ts.by_activity.map(function(a){ return '<div class="bbar"><span class="nm" style="width:130px">'+esc(a.doing)+'</span><div class="prog"><i style="width:'+a.avg_energy*10+'%;background:'+(a.avg_energy>=6.5?'var(--ok)':a.avg_energy>=4.5?'var(--warm)':'var(--red)')+'"></i></div><b>'+a.avg_energy+'</b><span class="small muted">×'+a.n+'</span></div>'; }).join('') : '<p class="muted small">Tag what you were doing when you log a pulse.</p>';
-  var t=todayKey(), L=+S.settings.len||75, st=S.settings.start, g='', perf=0;
-  for(var i=0;i<L;i++){ var k=addDays(st,i), c=''; var dd=diffDays(k,t);
-    if(dd>0){ if(isPerfect(k)){c='p';perf++;} else c='m'; } else if(dd===0){ c='t'+(isPerfect(k)?' p':''); if(isPerfect(k)) perf++; }
-    g+='<i class="'+c+'" title="'+k+'"></i>'; }
-  $('#grid75').innerHTML=g; $('#chTag').textContent=perf+' perfect / '+Math.max(0,Math.min(L,dayNum()))+' days';
+  $('#dcBox').innerHTML = ts.by_activity.length ? ts.by_activity.map(function(a){ return '<div class="bbar"><span class="nm" style="width:130px">'+esc(a.doing)+'</span><div class="prog"><i style="width:'+a.avg_energy*20+'%;background:'+(a.avg_energy>=3.5?'var(--ok)':a.avg_energy>=2.5?'var(--warm)':'var(--red)')+'"></i></div><b>'+a.avg_energy+'</b><span class="small muted">×'+a.n+'</span></div>'; }).join('') : '<p class="muted small">Tag what you were doing when you log a pulse.</p>';
+  var t=todayKey(), g='', start=S.settings.start;
+  var dow=(bris().getDay()+6)%7, first=addDays(t,-(dow+7*7));
+  g+=['M','T','W','T','F','S','S'].map(function(x){return '<b>'+x+'</b>';}).join('');
+  for(var ci=0;ci<56;ci++){ var k=addDays(first,ci), c='', dd=diffDays(k,t);
+    if(dd<0||k<start){ g+='<i></i>'; continue; }
+    if(isPerfect(k)) c='p'; else if(dd===0) c=''; else { var req=S.habits.filter(function(h){return h.req;}), dn=req.filter(function(h){return habitDone(h,k);}).length; c= dn>=Math.ceil(req.length/2)?'h':'m'; }
+    g+='<i class="'+c+(dd===0?' t':'')+'">'+(+k.slice(8))+'</i>'; }
+  $('#cal').innerHTML=g; $('#chTag').textContent='streak '+streak()+' · best '+bestStreak();
+  var tally={}, nm=0; for(var mi=1;mi<=30;mi++){ var mk=addDays(t,-mi); var md=S.days[mk]; if(md&&md.log&&md.log.miss){ nm++; (md.log.miss.reasons||[]).forEach(function(r){ tally[r]=(tally[r]||0)+1; }); } }
+  var keys=Object.keys(tally).sort(function(a,b){return tally[b]-tally[a];}), mx=keys.length?tally[keys[0]]:1;
+  $('#missWhy').innerHTML = keys.length ? keys.map(function(r){ return '<div class="bbar"><span class="nm" style="width:120px">'+esc(r)+'</span><div class="prog"><i style="width:'+tally[r]/mx*100+'%;background:var(--warm)"></i></div><b>'+tally[r]+'</b></div>'; }).join('')+'<p class="small muted" style="margin:6px 0 0">From '+nm+' logged missed day'+(nm===1?'':'s')+'.</p>' : '<p class="small muted">Nothing logged yet. When a day isn\'t full, Today asks what got in the way.</p>';
   var d14=[]; for(var j=13;j>=0;j--) d14.push(addDays(t,-j));
   function col(f){ return d14.map(function(k){ var d=S.days[k]; return d&&d[f]!=null&&d[f]!==''?+d[f]:null; }); }
-  lineChart($('#cEnergy'),[{c:'#7cc4b8',data:col('energy_am')},{c:'#5fa8e6',data:col('energy_pm')},{c:'#9f8cf0',data:col('mood')},{c:'#e6b45c',data:col('stress')}],{min:1,max:10,labels:true});
-  lineChart($('#cSleep'),[{c:'#9f8cf0',data:col('sleep_hours')},{c:'#7cc4b8',data:col('sleep_quality')}],{min:0,max:10,labels:true});
+  lineChart($('#cEnergy'),[{c:'#7cc4b8',data:col('energy_am')},{c:'#5fa8e6',data:col('energy_pm')},{c:'#9f8cf0',data:col('mood')},{c:'#e6b45c',data:col('stress')}],{min:1,max:5,labels:true});
+  lineChart($('#cSleep'),[{c:'#9f8cf0',data:col('sleep_hours')}],{labels:true,dp:1}); var sq=col('sleep_quality').filter(function(x){return x!=null;}); $('#slpQAvg').textContent= sq.length?'Avg quality '+(sq.reduce(function(a,b){return a+b;},0)/sq.length).toFixed(1)+' / 5':'';
   var d7=d14.slice(7);
   $('#brainTrend').innerHTML=brainReadsHTML(brainReads(addDays(t,-29),t));
   var d30=[]; for(var m=29;m>=0;m--) d30.push(addDays(t,-m));
@@ -1143,18 +1207,20 @@ function renderReport(){
      '<tr><td>Energy within 90 min after a walk or breathing set</td><td>'+fmt(R.afterRec)+' (n='+R.afterRecN+') vs '+fmt(R.noRec)+' otherwise (n='+R.noRecN+')</td></tr></table>';
   if(A&&A.focus2) h+='<div class="box" contenteditable>'+esc(A.focus2)+'</div>';
   h+='<h3>Supporting observations</h3><table><tr><th>Observation from the debrief</th><th>What the data shows</th></tr>'+
-     '<tr><td>Calm surface, high revs underneath</td><td>Avg revs '+fmt(R.revs)+'/10 against avg energy '+fmt(R.pulseE)+'/10</td></tr>'+
+     '<tr><td>Calm surface, high revs underneath</td><td>Avg revs '+fmt(R.revs)+'/5 against avg energy '+fmt(R.pulseE)+'/5</td></tr>'+
      '<tr><td>Goals reset upward mid-day</td><td>'+(R.goalMoved==null?'not logged yet':'Goalposts moved on '+R.goalMoved+'% of '+R.goalN+' logged days; original target hit '+fmt(R.hitTarget,'%'))+'</td></tr></table>';
   h+='<h2>3. Energy by time of day</h2><table><tr><th>Time block</th><th>Avg energy</th><th>Avg revs</th><th>Readings</th><th>Ideas</th><th>Feelings</th><th>Walks</th></tr>'+
      R.tod.by_block.map(function(b){return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+b.n+'</td><td>'+b.ideas+'</td><td>'+b.feelings+'</td><td>'+b.walks+'</td></tr>';}).join('')+'</table>';
   h+='<h3>Drains vs chargers (avg energy by activity)</h3>'+(R.tod.by_activity.length?'<table><tr><th>Doing</th><th>Avg energy</th><th>n</th></tr>'+R.tod.by_activity.map(function(a){return '<tr><td>'+esc(a.doing)+'</td><td>'+heat(a.avg_energy)+'</td><td>'+a.n+'</td></tr>';}).join('')+'</table>':'<p class="muted">No tagged pulses yet.</p>');
   if(A&&A.optimal_day&&A.optimal_day.length){ h+='<h3>Draft optimal day</h3><table><tr><th>When</th><th>What</th><th>Why (evidence)</th></tr>'+A.optimal_day.map(function(r){return '<tr><td contenteditable>'+esc(r.time)+'</td><td contenteditable>'+esc(r.do)+'</td><td contenteditable>'+esc(r.why)+'</td></tr>';}).join('')+'</table>'; }
-  h+='<h2>4. Trends</h2><h3>Energy, mood and stress</h3>'+svgChart([{c:'#3f9d8f',data:col('energy_am')},{c:'#3b82c4',data:col('energy_pm')},{c:'#7a63d8',data:col('mood')},{c:'#c98f1f',data:col('stress')}],{min:1,max:10,labels:true})+
+  h+='<h2>4. Trends</h2><h3>Energy, mood and stress</h3>'+svgChart([{c:'#3f9d8f',data:col('energy_am')},{c:'#3b82c4',data:col('energy_pm')},{c:'#7a63d8',data:col('mood')},{c:'#c98f1f',data:col('stress')}],{min:1,max:5,labels:true})+
      '<p class="muted small">Teal = energy AM · Blue = energy PM · Purple = mood · Amber = stress</p>';
-  h+='<h3>Sleep</h3>'+svgChart([{c:'#7a63d8',data:col('sleep_hours')},{c:'#3f9d8f',data:col('sleep_quality')}],{min:0,max:10,labels:true})+'<p class="muted small">Purple = hours · Teal = quality /10 · avg '+fmt(R.sleep,' h')+', quality '+fmt(R.sleepQ)+'</p>';
+  h+='<h3>Sleep</h3>'+svgChart([{c:'#7a63d8',data:col('sleep_hours')}],{labels:true,dp:1})+'<p class="muted small">Hours slept · avg '+fmt(R.sleep,' h')+', quality '+fmt(R.sleepQ)+' / 5</p>';
   h+='<h3>5Brains (inferred from targeted questions and journal)</h3>'+brainReadsHTML(R.brains,true);
   if(R.wStart) h+='<p>Bodyweight (Phoenix): '+(+R.wStart).toFixed(1)+' → '+(+R.wEnd).toFixed(1)+' kg</p>';
-  h+='<h3>Habit completion</h3><table><tr><th>Tick</th><th>Type</th><th>Days</th><th>%</th></tr>'+R.habits.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+(x.req?'Required':'Bonus')+'</td><td>'+x.done+'/'+R.days+'</td><td>'+heat(Math.round(x.pct/10))+'</td></tr>';}).join('')+'</table>';
+  h+='<h3>Habit completion</h3><table><tr><th>Tick</th><th>Type</th><th>Days</th><th>%</th></tr>'+R.habits.map(function(x){return '<tr><td>'+esc(x.name)+'</td><td>'+(x.req?'Required':'Bonus')+'</td><td>'+x.done+'/'+R.days+'</td><td>'+pctHeat(x.pct)+'</td></tr>';}).join('')+'</table>';
+  var mt={}, mn=0; R.keys.forEach(function(k){ var d=S.days[k]; if(d&&d.log&&d.log.miss){ mn++; (d.log.miss.reasons||[]).forEach(function(r){ mt[r]=(mt[r]||0)+1; }); } });
+  h+='<h3>Missed days: what got in the way</h3>'+(mn?'<table><tr><th>Reason</th><th>Days</th></tr>'+Object.keys(mt).sort(function(a,b){return mt[b]-mt[a];}).map(function(r){return '<tr><td>'+esc(r)+'</td><td>'+mt[r]+'</td></tr>';}).join('')+'</table><p class="muted small">'+mn+' missed days with a reason logged.</p>':'<p class="muted">No missed-day reasons logged.</p>');
   h+='<h2 class="pb">5. Reflections</h2>';
   if(A){ h+='<h3>Key patterns</h3>'+L(A.key_patterns)+'<h3>What worked</h3>'+L(A.what_worked)+'<h3>What didn\'t</h3>'+L(A.what_didnt)+'<h3>Recurring themes (journal)</h3>'+L(A.themes)+'<h3>Proposed next phase</h3>'+L(A.next_phase)+'<h3>Questions for Dave</h3>'+L(A.questions_for_dave); }
   else h+='<p class="muted">Tap “Write AI summary” to draft patterns, what worked, themes and questions for Dave. Journal entries are summarised as themes only; no raw transcripts go in the report.</p>';
@@ -1167,7 +1233,7 @@ function renderReport(){
    '<tr><td>Energy pulse</td><td>Timestamped energy, revs underneath, current activity, and what came before</td><td>David\'s notepad habit; builds the time-of-day map</td></tr>'+
    '<tr><td>Active recovery</td><td>One-tap 7-min walks, protein/carb snacks, and a guided 4-in/6-out breathing set (×4)</td><td>Focus point 2, and its measured effect on the next pulse</td></tr>'+
    '<tr><td>Water</td><td>Daily water, shared with Phoenix</td><td>Recovery</td></tr>'+
-   '<tr><td>Daily ticks</td><td>Diary reviewed, walk-and-talks, habits; several auto-tick from data</td><td>75 Hard-style consistency and a perfect-day streak</td></tr>'+
+   '<tr><td>Daily ticks</td><td>Diary reviewed, walk-and-talks, habits; several auto-tick from data</td><td>Habit building: a full-day streak, and missed days logged with a reason</td></tr>'+
    '<tr><td>Evening check-in</td><td>Energy, mood, stress, focus, whether the goalposts moved, original target hit, win, gratitude</td><td>Catches the mid-day upward goal reset</td></tr>'+
    '<tr><td>Voice journal: Feelings</td><td>Spoken entry, transcribed, then given a structured reflection</td><td>Processing; spots patterns over time</td></tr>'+
    '<tr><td>Voice journal: Ideas</td><td>Spoken idea, turned into a brief, logged with time and energy at capture</td><td>Finds creative windows</td></tr>'+
@@ -1195,10 +1261,10 @@ function closeReport(){ $('#report').classList.remove('on'); document.body.class
 
 // ───────────────────────── settings ─────────────────────────
 function renderSettings(){
-  $('#sStart').value=S.settings.start; $('#sLen').value=S.settings.len; $('#sWater').value=S.settings.water;
+  $('#sStart').value=S.settings.start; $('#sWater').value=S.settings.water;
   $('#sReport').value=S.settings.reportDate||'';
   $('#sSnack').value=S.settings.snackT; $('#sWalk').value=S.settings.walkT; $('#sPulse').value=S.settings.pulseT;
-  $('#sStrict').value=S.settings.strict?'1':'0'; $('#sKcal').value=S.settings.kcalTol;
+  $('#sKcal').value=S.settings.kcalTol;
   $('#sAiUrl').value=S.settings.aiUrl; $('#sAiModel').value=S.settings.aiModel; $('#sAbout').value=S.settings.about||'';
   var he=$('#habEdit'); he.innerHTML='';
   S.habits.forEach(function(h,i){
@@ -1222,13 +1288,11 @@ function renderSettings(){
 function bindSettings(){
   function on(id,fn){ $(id).addEventListener('change',function(){ fn(this.value); save(); renderAll(); }); }
   on('#sStart',function(v){ if(v) S.settings.start=v; });
-  on('#sLen',function(v){ S.settings.len=Math.max(1,+v||75); });
-  on('#sWater',function(v){ S.settings.water=Math.max(250,+v||3000); queueWaterTarget(); });
+  on('#sWater',function(v){ S.settings.water=Math.max(750,+v||4500); queueWaterTarget(); });
   on('#sReport',function(v){ S.settings.reportDate=v; });
   on('#sSnack',function(v){ S.settings.snackT=Math.max(1,+v||3); });
   on('#sWalk',function(v){ S.settings.walkT=Math.max(1,+v||1); });
   on('#sPulse',function(v){ S.settings.pulseT=Math.max(1,+v||3); });
-  on('#sStrict',function(v){ S.settings.strict=v==='1'; });
   on('#sKcal',function(v){ S.settings.kcalTol=Math.max(0,+v||150); });
   on('#sAiUrl',function(v){ S.settings.aiUrl=v.trim(); });
   on('#sAiModel',function(v){ S.settings.aiModel=v.trim(); });
