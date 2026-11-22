@@ -327,8 +327,10 @@ table.tod th{color:var(--mut);font-weight:500}
     <div class="scale" id="pEs"></div>
     <div class="lbl"><span>Revs underneath (vs what you show)</span><b id="pR">–</b></div>
     <div class="scale s" id="pRs"></div>
-    <div class="lbl"><span>What were you just doing?</span></div>
+    <div class="lbl"><span>What were you just doing?</span><span class="small muted">pick all that apply</span></div>
     <div class="ctx" id="pCtx"></div>
+    <div class="lbl"><span>When?</span><span class="small muted">defaults to now</span></div>
+    <div class="row"><div class="ctx" id="pWhenQ" style="flex:2"></div><input type="time" id="pTime" style="flex:1;padding:8px 10px"></div>
     <div class="lbl"><span>What came before it?</span><button class="btn sm dict" data-dict="pNote">Talk</button></div>
     <textarea id="pNote" class="grow" rows="3" placeholder="e.g. 3 back-to-back stakeholder meetings. Talk or type."></textarea>
     <div class="sp"></div>
@@ -536,7 +538,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.10.1';
+var APP_VERSION = '1.11.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -615,7 +617,8 @@ function qFor(k){
   var n=diffDays('2026-01-01',k)+(L.qskip||0), b=S.brains[((n%5)+5)%5], list=QB[b.id]||QB.red;
   return {brain:b.id, text:list[Math.floor(n/5)%list.length]};
 }
-var CONTEXTS=['Multi-stakeholder mtg','1-on-1','Deep work','Admin / email','Training','Commute','Family','Side venture','Break','Just woke'];
+function ctxList(a){ a=a||{}; return a.contexts&&a.contexts.length ? a.contexts : (a.context ? [a.context] : []); }
+var CONTEXTS=['Team meeting','Multi-stakeholder mtg','1-on-1','Deep work','Admin / email','Training','Commute','Family','Side venture','Break','Just woke'];
 var BLOCKS=[[4,7,'Early 4–7'],[7,10,'Morning 7–10'],[10,12,'Late am 10–12'],[12,14,'Midday 12–2'],[14,17,'Arvo 2–5'],[17,20,'Evening 5–8'],[20,28,'Night 8+']];
 function brisHour(iso){ var d=bris(new Date(iso)); return d.getHours()+d.getMinutes()/60; }
 function blockOf(iso){ var h=brisHour(iso); if(h<4) h+=24; for(var i=0;i<BLOCKS.length;i++) if(h>=BLOCKS[i][0]&&h<BLOCKS[i][1]) return BLOCKS[i][2]; return BLOCKS[6][2]; }
@@ -885,17 +888,26 @@ var PUL={e:null,r:null,ctx:null};
 function renderPulse(){
   [['#pEs','e','#pE','energy'],['#pRs','r','#pR','revs']].forEach(function(x){ var el=$(x[0]); if(!el.children.length){ fillScale(el,x[3]); el.onclick=function(ev){ var t=ev.target.closest('button'); var v=t?+t.dataset.v:0; if(!v) return; PUL[x[1]]=PUL[x[1]]===v?null:v; renderPulse(); }; }
     $$('button',el).forEach(function(b){ b.classList.toggle('on',+b.dataset.v===PUL[x[1]]); }); $(x[2]).textContent=scaleWord(x[3],PUL[x[1]]); });
-  var c=$('#pCtx'); if(!c.children.length){ CONTEXTS.forEach(function(t){ var b=document.createElement('button'); b.textContent=t; b.onclick=function(){ PUL.ctx=PUL.ctx===t?null:t; renderPulse(); }; c.appendChild(b); }); }
-  $$('button',c).forEach(function(b){ b.classList.toggle('on',b.textContent===PUL.ctx); });
+  if(!PUL.ctx||typeof PUL.ctx==='string') PUL.ctx=PUL.ctx?[PUL.ctx]:[];
+  var c=$('#pCtx'); if(!c.children.length){ CONTEXTS.forEach(function(t){ var b=document.createElement('button'); b.textContent=t; b.onclick=function(){ var i=PUL.ctx.indexOf(t); if(i>=0) PUL.ctx.splice(i,1); else PUL.ctx.push(t); renderPulse(); }; c.appendChild(b); }); }
+  $$('button',c).forEach(function(b){ b.classList.toggle('on',PUL.ctx.indexOf(b.textContent)>=0); });
+  var wq=$('#pWhenQ'); if(!wq.children.length){ [['Now',0],['30 min ago',30],['1 hr ago',60],['2 hr ago',120]].forEach(function(o){ var b=document.createElement('button'); b.textContent=o[0]; b.dataset.m=o[1]; b.onclick=function(){ PUL.ago=o[1]; var d=bris(new Date(Date.now()-o[1]*60000)); $('#pTime').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); renderPulse(); }; wq.appendChild(b); });
+    $('#pTime').onchange=function(){ PUL.ago=null; renderPulse(); }; }
+  if(PUL.ago===undefined){ PUL.ago=0; }
+  $$('button',wq).forEach(function(b){ b.classList.toggle('on', PUL.ago!==null && +b.dataset.m===PUL.ago); });
+  if(PUL.ago===0 && document.activeElement!==$('#pTime')){ var nd=bris(); $('#pTime').value=String(nd.getHours()).padStart(2,'0')+':'+String(nd.getMinutes()).padStart(2,'0'); }
   var ps=pulsesOn(todayKey()); $('#plTag').textContent=ps.length+'/'+(+S.settings.pulseT||3); $('#plTag').className='tag'+(ps.length>=(+S.settings.pulseT||3)?' ok':'');
-  $('#pList').innerHTML=ps.slice().reverse().map(function(e){ var a=e.analysis||{}; return '<div class="pl"><span class="tm">'+hhmm(e.created_at)+'</span><span class="e">'+ic('zap','sm')+(a.energy||'–')+(a.revs?' <span style="color:var(--warm)">↑'+a.revs+'</span>':'')+'</span><span class="n">'+esc([a.context,e.transcript].filter(Boolean).join(' · '))+'</span></div>'; }).join('');
+  $('#pList').innerHTML=ps.slice().reverse().map(function(e){ var a=e.analysis||{}; return '<div class="pl"><span class="tm">'+hhmm(e.created_at)+'</span><span class="e">'+ic('zap','sm')+(a.energy||'–')+(a.revs?' <span style="color:var(--warm)">↑'+a.revs+'</span>':'')+'</span><span class="n">'+esc([ctxList(a).join(' + '),e.transcript].filter(Boolean).join(' · '))+'</span></div>'; }).join('');
 }
 function logPulse(){
   if(!PUL.e){ toast('Tap an energy score first'); return; }
-  var now=new Date().toISOString(), note=$('#pNote').value.trim();
-  S.entries.unshift({id:uuid(),date:todayKey(),kind:'pulse',transcript:note,analysis:{energy:PUL.e,revs:PUL.r,context:PUL.ctx,block:blockOf(now)},created_at:now,updated_at:now,_dirty:true});
+  var nowMs=Date.now(), at=nowMs, tv=$('#pTime').value;
+  if(PUL.ago) at=nowMs-PUL.ago*60000;
+  else if(PUL.ago===null && /^\d\d:\d\d$/.test(tv)){ var nb=bris(), diffMin=(+tv.slice(0,2)*60+ +tv.slice(3))-(nb.getHours()*60+nb.getMinutes()); if(diffMin>0) diffMin-=1440; at=nowMs+diffMin*60000; }
+  var when=new Date(at).toISOString(), note=$('#pNote').value.trim(), tags=(PUL.ctx||[]).slice();
+  S.entries.unshift({id:uuid(),date:key(bris(new Date(at))),kind:'pulse',transcript:note,analysis:{energy:PUL.e,revs:PUL.r,contexts:tags,context:tags.join(' + ')||null,block:blockOf(when),logged_at:new Date(nowMs).toISOString()},created_at:when,updated_at:new Date(nowMs).toISOString(),_dirty:true});
   if(DICT.on && DICT.btn) dictate($('#pNote'), DICT.btn);
-  PUL={e:null,r:null,ctx:null}; $('#pNote').value=''; autoGrow($('#pNote')); FOLD.pulse=true; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+blockOf(now));
+  PUL={e:null,r:null,ctx:[],ago:0}; $('#pNote').value=''; autoGrow($('#pNote')); FOLD.pulse=true; touchDay(); renderToday(); renderHeader(); toast('Pulse logged · '+hhmm(when)+' · '+blockOf(when));
 }
 function tsOf(x){ return typeof x==='string'?x:(x&&x.at); }
 var LOCS=['Home','Office','Car','Café / out','Gym','Other'];
@@ -1245,7 +1257,7 @@ function ctxFor(k){
   return { date:k, weekday: niceDate(k).split(' ')[0], scales:'all check-in scores are 1-5 (energy/mood/focus/sleep quality: 5 = best; stress and revs: 5 = maxed)',
     weather_actual: (L.weather&&L.weather.summary)||null, weather_by_hour: (L.weather&&L.weather.hours)||null,
     full_day: isPerfect(k), missed_items: reqMissed(k), miss_reason: L.miss||null, week_miss_reflection: L.missWeek||null,
-    energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:a.context||null, preceded_by:e.transcript||null}; }),
+    energy_pulses: pulsesOn(k).map(function(e){ var a=e.analysis||{}; return {time:hhmm(e.created_at), block:blockOf(e.created_at), energy:a.energy, revs_underneath:a.revs||null, doing:ctxList(a).join(' + ')||null, preceded_by:e.transcript||null}; }),
     recovery: { walks:(L.walk||[]).map(walkDesc), meals_and_snacks:mealsOn(k).map(function(m){ return (m.at?hhmm(m.at):'?')+' '+mealLabel(m); }), breathing:(L.breath||[]).map(hhmm) },
     morning_thoughts: L.am_thoughts||null,
     checkin_times: Object.keys(L.times||{}).reduce(function(o,x){ o[x]=hhmm(L.times[x]); return o; },{}),
@@ -1377,7 +1389,7 @@ var SHEET_ID=null;
 function openEntry(id){
   var e=S.entries.find(function(x){return x.id===id;}); if(!e) return; SHEET_ID=id;
   var h='<div class="row" style="margin-bottom:8px"><div><b>'+ICON[e.kind]+' '+esc(e.kind[0].toUpperCase()+e.kind.slice(1))+'</b><div class="small muted">'+esc(niceDate(e.date))+' · '+new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'</div></div><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
-  if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+scaleWord('energy',pa.energy)+'</b> · revs underneath <b>'+scaleWord('revs',pa.revs)+'</b><br>'+esc(pa.context||'')+'</p>'; }
+  if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+scaleWord('energy',pa.energy)+'</b> · revs underneath <b>'+scaleWord('revs',pa.revs)+'</b><br>'+esc(ctxList(pa).join(' + '))+'</p>'; }
   if(e.kind==='feelings'||e.kind==='ideas'||e.kind==='pulse') h+='<details'+(e.analysis?'':' open')+'><summary class="small muted" style="margin:6px 0">Transcript</summary><textarea id="shTx" rows="6">'+esc(e.transcript)+'</textarea></details>';
   if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting…</p>';
   h+=analysisHTML(e);
@@ -1423,7 +1435,7 @@ function todSummary(nDays){
   BLOCKS.forEach(function(b){ agg[b[2]]={e:[],r:[],ideas:0,feelings:0,walks:0}; });
   S.entries.forEach(function(e){ if(e._deleted||e.date<since) return; var b=blockOf(e.created_at);
     if(e.kind==='pulse'&&e.analysis){ if(e.analysis.energy) agg[b].e.push(e.analysis.energy); if(e.analysis.revs) agg[b].r.push(e.analysis.revs);
-      var c=e.analysis.context; if(c&&e.analysis.energy){ (ctx[c]=ctx[c]||[]).push(e.analysis.energy); } }
+      if(e.analysis.energy) ctxList(e.analysis).forEach(function(c){ (ctx[c]=ctx[c]||[]).push(e.analysis.energy); }); }
     if(e.kind==='ideas') agg[b].ideas++; if(e.kind==='feelings') agg[b].feelings++; });
   Object.keys(S.days).forEach(function(k){ if(k<since) return; var d=S.days[k], tm=(d.log&&d.log.times)||{};
     if(d.energy_am&&tm.energy_am) agg[blockOf(tm.energy_am)].e.push(d.energy_am);
@@ -1524,8 +1536,9 @@ function reportStats(){
   var habits=S.habits.map(function(h){ var c=ks.filter(function(k){return habitDone(h,k);}).length; return {name:h.name, req:h.req, done:c, pct:Math.round(c/n*100)}; });
   var L=function(x){ return ks.reduce(function(a,k){ var d=S.days[k]; return a+((d&&d.log&&d.log[x])||[]).length; },0); };
   var walkTimes=[]; ks.forEach(function(k){ var d=S.days[k]; ((d&&d.log&&d.log.walk)||[]).forEach(function(w){ walkTimes.push(blockOf(tsOf(w))); }); });
-  var stake=pul.filter(function(e){return e.analysis&&e.analysis.context==='Multi-stakeholder mtg';}).map(function(e){return e.analysis.energy;});
-  var nonStake=pul.filter(function(e){return e.analysis&&e.analysis.context&&e.analysis.context!=='Multi-stakeholder mtg';}).map(function(e){return e.analysis.energy;});
+  var isMtg=function(e){ return ctxList(e.analysis).some(function(c){ return c==='Multi-stakeholder mtg'||c==='Team meeting'; }); };
+  var stake=pul.filter(function(e){return e.analysis&&isMtg(e);}).map(function(e){return e.analysis.energy;});
+  var nonStake=pul.filter(function(e){return e.analysis&&ctxList(e.analysis).length&&!isMtg(e);}).map(function(e){return e.analysis.energy;});
   var w=ks.map(function(k){ var p=S.phoenix[k]; return S.weights[k]||(p&&p.weight_kg)||null; }).filter(Boolean);
   return { from:from, to:to, days:ks.length, keys:ks, tracked:tracked.length, perfect:perfect.length, best:best, streak:streak(),
     sleep:avgOf(D('sleep_hours')), sleepQ:avgOf(D('sleep_quality')), eAM:avgOf(D('energy_am')), ePM:avgOf(D('energy_pm')), mood:avgOf(D('mood')), stress:avgOf(D('stress')), focus:avgOf(D('focus')),
@@ -1561,7 +1574,7 @@ function renderReport(){
   h+='<h3>Focus point 1: protect energy through the diary</h3><table><tr><th>Measure</th><th>Result</th></tr>'+
      '<tr><td>Reviewed tomorrow\'s diary</td><td>'+((R.habits.find(function(x){return /diary/i.test(x.name);})||{}).pct||0)+'% of days</td></tr>'+
      '<tr><td>Walk-and-talk 1-on-1s</td><td>'+((R.habits.find(function(x){return /walk-and-talk/i.test(x.name);})||{}).done||0)+' days</td></tr>'+
-     '<tr><td>Energy after multi-stakeholder meetings</td><td>'+fmt(R.stakeE)+' (n='+R.stakeN+') vs '+fmt(R.nonStakeE)+' for everything else</td></tr></table>';
+     '<tr><td>Energy after team / multi-stakeholder meetings</td><td>'+fmt(R.stakeE)+' (n='+R.stakeN+') vs '+fmt(R.nonStakeE)+' for everything else</td></tr></table>';
   if(A&&A.focus1) h+='<div class="box" contenteditable>'+esc(A.focus1)+'</div>';
   h+='<h3>Focus point 2: active recovery, daily</h3><table><tr><th>Measure</th><th>Result</th></tr>'+
      '<tr><td>7-minute walks</td><td>'+R.walks+' total · '+(R.walks/Math.max(1,R.days)).toFixed(1)+'/day · '+Math.round(R.walkMins)+' min walked</td></tr>'+
