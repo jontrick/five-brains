@@ -538,7 +538,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.11.0';
+var APP_VERSION = '1.11.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -650,6 +650,9 @@ function load(){
     for(var k in b) if(!(k in s)) s[k]=b[k];
     for(var k2 in b.settings) if(!(k2 in s.settings)) s.settings[k2]=b.settings[k2];
     if(!s.dirty) s.dirty={days:{},water:{}}; if(!s.dirty.feed) s.dirty.feed={};
+    // a reflection that was in flight when the app was closed is not still running
+    (s.entries||[]).forEach(function(e){ if(e._busy){ e._busy=false; if(!e.analysis) e._want=true; } });
+    Object.keys(s.days||{}).forEach(function(k){ var q=s.days[k].log&&s.days[k].log.q; if(q&&q._busy){ q._busy=false; } });
     if(needScale5){ // v1.4: move all check-in scales from 1–10 to 1–5
       var now=new Date().toISOString(), half=function(v){ return v==null||v===''?v:Math.max(1,Math.min(5,Math.round(+v/2))); };
       s.dirty=s.dirty||{days:{},water:{}};
@@ -1189,7 +1192,7 @@ function saveEntry(reflect){
   var now=new Date().toISOString();
   var e={id:uuid(), date:todayKey(), kind:REC.mode, transcript:tx, analysis:null, created_at:now, updated_at:now, _dirty:true};
   S.entries.unshift(e); touchDay(); closeRec(); renderAll(); toast('Saved');
-  if(reflect) reflectEntry(e.id);
+  if(reflect){ e._want=true; reflectEntry(e.id); }
 }
 
 // ───────────────────────── reflection (Claude via proxy) ─────────────────────────
@@ -1280,23 +1283,46 @@ var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a we
 async function callClaude(prompt, payload){
   var body = { model:S.settings.aiModel, max_tokens:2000,
     messages:[{role:'user', content: brainsLens() + prompt + (S.settings.about ? '\n\nAbout Jon (from his 5 Brains assessment): '+S.settings.about : '') + '\n\nDATA:\n' + JSON.stringify(payload)}] };
-  var r = await fetch(S.settings.aiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok) throw new Error('Reflection service returned '+r.status);
+  var ctl = window.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function(){ ctl.abort(); }, 90000) : null;
+  var r;
+  try{ r = await fetch(S.settings.aiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined}); }
+  catch(err){ clearTimeout(tm); throw new Error(err && err.name==='AbortError' ? 'Reflection took too long (90 s). It will retry.' : 'Could not reach the reflection service. It will retry.'); }
+  clearTimeout(tm);
+  if(!r.ok){
+    var detail=''; try{ var ej=await r.clone().json(); detail=(ej.error&&(ej.error.message||ej.error))||''; }catch(_e){}
+    // the proxy may only allow some models: fall back to Sonnet once rather than failing
+    if((r.status===400||r.status===403||r.status===404) && /opus/.test(body.model) && !callClaude._fellBack){
+      callClaude._fellBack=true; var keep=S.settings.aiModel; S.settings.aiModel='claude-sonnet-4-5';
+      try{ var out=await callClaude(prompt,payload); toast('Opus was refused by your proxy, so Sonnet was used. Check Settings.'); return out; }
+      finally{ S.settings.aiModel=keep; callClaude._fellBack=false; }
+    }
+    throw new Error('Reflection service returned '+r.status+(detail?': '+String(detail).slice(0,120):''));
+  }
   var j = await r.json(); var t=(j.content&&j.content[0]&&j.content[0].text)||'';
   var m=t.match(/\{[\s\S]*\}/); if(!m) throw new Error('No JSON in reply');
   return JSON.parse(m[0]);
 }
-async function reflectEntry(id){
+var _retrying=false;
+async function retryReflections(){
+  if(_retrying || !navigator.onLine) return; _retrying=true;
+  try{
+    var cut=Date.now()-48*3600e3;
+    var todo=S.entries.filter(function(e){ return e._want && !e.analysis && !e._busy && !e._deleted && (e.kind==='feelings'||e.kind==='ideas') && Date.parse(e.created_at)>cut; });
+    for(var i=0;i<todo.length;i++) await reflectEntry(todo[i].id, true);
+    var t=todayKey(), Q=S.days[t]&&S.days[t].log&&S.days[t].log.q; if(Q&&Q.answer&&!Q.read&&!Q._busy) await readQuestion(t);
+  } finally { _retrying=false; }
+}
+async function reflectEntry(id, quiet){
   var e=S.entries.find(function(x){return x.id===id;}); if(!e) return;
-  e._busy=true; renderAll(); if(SHEET_ID===id) openEntry(id);
+  if(e._busy) return; e._busy=true; e._want=true; e._err=null; renderAll(); if(SHEET_ID===id) openEntry(id);
   try{
     var recent=S.entries.filter(function(x){return x.id!==id && x.kind===e.kind && !x._deleted && x.analysis;}).slice(0,3)
       .map(function(x){return {date:x.date, time:hhmm(x.created_at), summary:x.analysis.summary||x.analysis.title};});
     var a = await callClaude(e.kind==='ideas'?PROMPT_IDEA:PROMPT_FEEL, {entry:e.transcript, recorded_at:hhmm(e.created_at)+' ('+blockOf(e.created_at)+')', day:ctxFor(e.date), recent_entries:recent});
-    e.analysis=a; e.updated_at=new Date().toISOString(); e._dirty=true; save(); queueSync(); toast('Reflection ready');
-    openEntry(id);
-  }catch(err){ toast(err.message); console.warn(err); }
-  e._busy=false; renderAll(); if(SHEET_ID===id) openEntry(id);
+    e.analysis=a; e._want=false; e._err=null; e.updated_at=new Date().toISOString(); e._dirty=true; save(); queueSync(); toast(quiet?'A reflection finished in the background':'Reflection ready');
+    if(!quiet || SHEET_ID===id) openEntry(id);
+  }catch(err){ e._err=err.message; toast(err.message); console.warn(err); }
+  e._busy=false; save(); renderAll(); if(SHEET_ID===id) openEntry(id);
 }
 async function runWeekly(){
   var b=$('#weeklyBtn'); b.disabled=true; b.innerHTML='<span class="spin"></span> Reviewing…';
@@ -1318,7 +1344,7 @@ var ICON={feelings:ic('heart','sm'),ideas:ic('bulb','sm'),weekly:ic('compass','s
 function entryRow(e){
   if(e.kind==='pulse'){ var pa=e.analysis||{}; return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ic('zap','sm')+' <span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span><span class="tag">'+esc(pa.block||'')+'</span></div><p>Energy '+(pa.energy||'–')+(pa.revs?' · revs '+pa.revs:'')+(pa.context?' · '+esc(pa.context):'')+(e.transcript?' — '+esc(e.transcript):'')+'</p></button>'; }
   var a=e.analysis, title = e.kind==='ideas' && a && a.title ? a.title : (e.kind==='weekly'&&a?a.headline: (a&&a.summary? a.summary : e.transcript));
-  var tag = e._busy?'<span class="tag"><span class="spin"></span></span>' : (a?'<span class="tag ok">reflected</span>':'<span class="tag">raw</span>');
+  var tag = e._busy?'<span class="tag"><span class="spin"></span> reflecting</span>' : (a?'<span class="tag ok">reflected</span>': (e._want?'<span class="tag warn">will retry</span>':'<span class="tag">not reflected</span>'));
   return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ICON[e.kind]+' <span class="small muted">'+esc(niceDate(e.date))+'</span>'+tag+'</div><p>'+esc(title)+'</p></button>';
 }
 function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
@@ -1391,7 +1417,8 @@ function openEntry(id){
   var h='<div class="row" style="margin-bottom:8px"><div><b>'+ICON[e.kind]+' '+esc(e.kind[0].toUpperCase()+e.kind.slice(1))+'</b><div class="small muted">'+esc(niceDate(e.date))+' · '+new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'</div></div><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
   if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+scaleWord('energy',pa.energy)+'</b> · revs underneath <b>'+scaleWord('revs',pa.revs)+'</b><br>'+esc(ctxList(pa).join(' + '))+'</p>'; }
   if(e.kind==='feelings'||e.kind==='ideas'||e.kind==='pulse') h+='<details'+(e.analysis?'':' open')+'><summary class="small muted" style="margin:6px 0">Transcript</summary><textarea id="shTx" rows="6">'+esc(e.transcript)+'</textarea></details>';
-  if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting…</p>';
+  if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting… you can leave this screen.</p>';
+  else if(!e.analysis && e._err) h+='<p class="small" style="color:var(--warm)">Last try failed: '+esc(e._err)+'</p>';
   h+=analysisHTML(e);
   h+='<div class="row" style="margin-top:16px">'+(e.kind==='feelings'||e.kind==='ideas'?'<button class="btn sm" id="shRe">'+(e.analysis?'Re-run reflection':'Reflect')+'</button>':'')+'<button class="btn sm" id="shDel" style="color:var(--red)">Delete</button></div>';
   $('#sheetBody').innerHTML=h; $('#sheet').classList.add('on');
@@ -1782,7 +1809,8 @@ function renderAll(){ renderHeader(); if(VIEW==='today') renderToday(); if(VIEW=
 
 hydrateIcons(document); applySkin(S.settings.skin); bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
 samplePlace(false).then(function(){ logWeather(); });
-document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); samplePlace(false).then(function(){ logWeather(); }); } });
+setTimeout(retryReflections, 2500);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); setTimeout(retryReflections, 2500); samplePlace(false).then(function(){ logWeather(); }); } });
 window.addEventListener('online',function(){ fullSync(); });
 var _lastDay=todayKey(); setInterval(function(){ if(todayKey()!==_lastDay){ _lastDay=todayKey(); FOLD={}; renderAll(); } },60000);
 if('serviceWorker' in navigator){
