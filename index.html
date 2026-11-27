@@ -271,7 +271,7 @@ table.tod th{color:var(--mut);font-weight:500}
   <div class="card jtop">
     <h2><i data-ic="mic"></i> Log something <span class="small muted" style="margin-left:auto;font-weight:500">talk or type</span></h2>
     <div class="jbtns">
-      <button class="btn" data-rec="feelings"><i data-ic="heart" class="big"></i>Feelings</button>
+      <button class="btn" data-rec="feelings"><i data-ic="heart" class="big"></i>Feelings &amp; thoughts</button>
       <button class="btn" data-rec="ideas"><i data-ic="bulb" class="big"></i>Ideas</button>
     </div>
     <div id="todayEntries" style="margin-top:10px"></div>
@@ -390,7 +390,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <!-- ═════════ JOURNAL ═════════ -->
 <section class="view" id="v-journal">
   <div class="jbtns" style="margin-top:4px">
-    <button class="btn" data-rec="feelings"><i data-ic="heart" class="big"></i>Feelings</button>
+    <button class="btn" data-rec="feelings"><i data-ic="heart" class="big"></i>Feelings &amp; thoughts</button>
     <button class="btn" data-rec="ideas"><i data-ic="bulb" class="big"></i>Ideas</button>
   </div>
   <div class="card">
@@ -404,7 +404,7 @@ table.tod th{color:var(--mut);font-weight:500}
     <button class="btn vio full" id="weeklyBtn">Run weekly review</button>
   </div>
   <div class="row" style="margin:6px 0 10px">
-    <select id="jFilter"><option value="all">All entries</option><option value="feelings">Feelings</option><option value="ideas">Ideas</option><option value="weekly">Weekly reviews</option><option value="pulse">Energy pulses</option></select>
+    <select id="jFilter"><option value="all">All entries</option><option value="feelings">Feelings &amp; thoughts</option><option value="ideas">Ideas</option><option value="weekly">Weekly reviews</option><option value="pulse">Energy pulses</option></select>
   </div>
   <div id="entryList"></div>
 </section>
@@ -498,7 +498,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <div class="rec" id="rec">
   <div class="row" style="margin-bottom:10px">
     <button class="btn sm" style="flex:none" id="recClose">✕</button>
-    <div class="seg" id="recSeg"><button data-m="feelings"><i data-ic="heart" class="sm mut"></i> Feelings</button><button data-m="ideas"><i data-ic="bulb" class="sm mut"></i> Ideas</button></div>
+    <div class="seg" id="recSeg"><button data-m="feelings"><i data-ic="heart" class="sm mut"></i> Feelings &amp; thoughts</button><button data-m="ideas"><i data-ic="bulb" class="sm mut"></i> Ideas</button></div>
   </div>
   <div class="hint" id="recPrompt"></div>
   <textarea id="recTx" placeholder="Tap the mic and talk, or type, or use your keyboard's mic."></textarea>
@@ -542,7 +542,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.12.3';
+var APP_VERSION = '1.12.4';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -1203,22 +1203,38 @@ function openRec(mode){ REC.mode=mode||'feelings'; $('#recTx').value=''; setRecM
 function setRecMode(m){ REC.mode=m; $$('#recSeg button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m);}); var p=PROMPTS[m]; $('#recPrompt').textContent='Prompt: '+p[Math.floor(Math.random()*p.length)]; }
 function closeRec(){ stopMic(); $('#rec').classList.remove('on'); }
 var SRC = window.SpeechRecognition || window.webkitSpeechRecognition; var SR_OK = !!SRC;
-var DICT={on:false,sr:null,btn:null};
+var DICT={on:false,sr:null,btn:null,want:false,field:null};
+var _wake=null;
+function wakeOn(){ try{ if(navigator.wakeLock && !_wake) navigator.wakeLock.request('screen').then(function(l){ _wake=l; l.addEventListener('release',function(){ _wake=null; }); }).catch(function(){}); }catch(e){} }
+function wakeOff(){ try{ if(_wake){ _wake.release(); _wake=null; } }catch(e){} }
+function micWanted(){ return REC.want || DICT.want; }
+// iPhone stops speech recognition when the screen locks or the app goes to the background.
+// When you come back, pick the mic straight back up, keeping everything already transcribed.
+function resumeMics(){
+  if(document.hidden) return;
+  if(REC.want && !REC.live && $('#rec').classList.contains('on')){ startMic(true); toast('Mic back on'); }
+  if(DICT.want && !DICT.on && DICT.field && DICT.btn){ var f=DICT.field, b=DICT.btn; DICT.want=false; dictate(f,b); toast('Mic back on'); }
+  if(micWanted()) wakeOn();
+}
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) setTimeout(resumeMics,400); });
 function autoGrow(el){ if(!el||!el.classList.contains('grow')) return; if(el.offsetParent===null){ el.style.height=''; return; } el.style.height='auto'; var h=el.scrollHeight; el.style.height = h>0 ? (h+2)+'px' : ''; }
 document.addEventListener('input',function(e){ if(e.target && e.target.tagName==='TEXTAREA') autoGrow(e.target); });
 function growAll(){ $$('textarea.grow').forEach(autoGrow); }
 function dictate(field, btn){
-  if(DICT.on){ DICT.on=false; try{DICT.sr.stop();}catch(e){} btn.classList.remove('live'); btn.textContent='Talk'; return; }
+  if(DICT.on || (DICT.want && DICT.btn===btn)){ DICT.on=false; DICT.want=false; try{DICT.sr&&DICT.sr.stop();}catch(e){} btn.classList.remove('live'); btn.textContent='Talk'; if(!micWanted()) wakeOff(); return; }
   if(!SR_OK){ field.focus(); toast('Use the mic on your keyboard'); return; }
   var sr=new SRC(); sr.lang='en-AU'; sr.continuous=true; sr.interimResults=true; var base=field.value; if(base&&!/\s$/.test(base)) base+=' ';
   sr.onresult=function(ev){ var fin='',inter=''; for(var i=ev.resultIndex;i<ev.results.length;i++){ var t=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin+=t; else inter+=t; }
     if(fin) base+=fin.trim()+' '; field.value=base+inter; field.dispatchEvent(new Event('input')); };
-  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ DICT.on=false; btn.classList.remove('live'); btn.textContent='Talk'; field.focus(); toast('Mic blocked. Use your keyboard\'s mic.'); } };
-  sr.onend=function(){ if(DICT.on){ try{ base=field.value; if(base&&!/\s$/.test(base)) base+=' '; sr.start(); }catch(e){} } };
-  try{ sr.start(); DICT={on:true,sr:sr,btn:btn}; btn.classList.add('live'); btn.textContent='■ Stop'; }catch(e){ field.focus(); toast('Use the mic on your keyboard'); }
+  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ DICT.on=false; DICT.want=false; btn.classList.remove('live'); btn.textContent='Talk'; field.focus(); toast('Mic blocked. Use your keyboard\'s mic.'); } };
+  sr.onend=function(){ if(!DICT.want) return;
+    if(document.hidden){ DICT.on=false; btn.textContent='■ Paused'; return; }   // resumes when you come back
+    try{ base=field.value; if(base&&!/\s$/.test(base)) base+=' '; sr.start(); }catch(e){ DICT.on=false; } };
+  try{ sr.start(); DICT={on:true,sr:sr,btn:btn,want:true,field:field}; btn.classList.add('live'); btn.textContent='■ Stop'; wakeOn(); }catch(e){ field.focus(); toast('Use the mic on your keyboard'); }
 }
-function startMic(){
+function startMic(resumed){
   if(!SR_OK){ $('#recTx').focus(); return; }
+  REC.want=true; wakeOn();
   var sr=new SRC(); sr.lang='en-AU'; sr.continuous=true; sr.interimResults=true;
   REC.base = $('#recTx').value; if(REC.base && !/\s$/.test(REC.base)) REC.base+=' ';
   sr.onresult=function(ev){
@@ -1227,17 +1243,19 @@ function startMic(){
     if(fin){ REC.base += fin.trim()+' '; }
     $('#recTx').value = REC.base + interim;
   };
-  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ REC.live=false; uiMic(); $('#recHint').textContent='Mic blocked. Use the mic on your keyboard instead.'; } };
-  sr.onend=function(){ if(REC.live){ try{ REC.base=$('#recTx').value; if(REC.base && !/\s$/.test(REC.base)) REC.base+=' '; sr.start(); }catch(e){ REC.live=false; uiMic(); } } };
-  try{ sr.start(); REC.sr=sr; REC.live=true; uiMic(); $('#recHint').textContent='Listening… tap to pause'; }
+  sr.onerror=function(e){ if(e.error==='not-allowed'||e.error==='service-not-allowed'){ REC.live=false; REC.want=false; uiMic(); $('#recHint').textContent='Mic blocked. Use the mic on your keyboard instead.'; } };
+  sr.onend=function(){ if(!REC.want) return;
+    if(document.hidden){ REC.live=false; uiMic(); $('#recHint').textContent='Paused while the screen was off. Picks up again when you\'re back.'; return; }
+    try{ REC.base=$('#recTx').value; if(REC.base && !/\s$/.test(REC.base)) REC.base+=' '; sr.start(); REC.live=true; uiMic(); }catch(e){ REC.live=false; uiMic(); } };
+  try{ sr.start(); REC.sr=sr; REC.live=true; uiMic(); $('#recHint').textContent=resumed?'Listening again… tap to pause':'Listening… tap to pause. The screen stays on while you talk.'; }
   catch(e){ $('#recHint').textContent='Couldn\'t start the mic. Use the keyboard mic.'; }
 }
-function stopMic(){ REC.live=false; if(REC.sr){ try{REC.sr.stop();}catch(e){} REC.sr=null; } uiMic(); if($('#rec').classList.contains('on')) $('#recHint').textContent= SR_OK?'Paused — tap to keep going':''; }
+function stopMic(){ REC.live=false; REC.want=false; if(!micWanted()) wakeOff(); if(REC.sr){ try{REC.sr.stop();}catch(e){} REC.sr=null; } uiMic(); if($('#rec').classList.contains('on')) $('#recHint').textContent= SR_OK?'Paused — tap to keep going':''; }
 function uiMic(){ $('#micBtn').classList.toggle('live',REC.live); }
 function bindRec(){
   $('#recClose').onclick=async function(){ if($('#recTx').value.trim() && !(await ask('Discard this entry?','Discard'))) return; closeRec(); };
   $$('#recSeg button').forEach(function(b){ b.onclick=function(){ setRecMode(b.dataset.m); }; });
-  $('#micBtn').onclick=function(){ REC.live?stopMic():startMic(); };
+  $('#micBtn').onclick=function(){ (REC.live||REC.want)?stopMic():startMic(); };
   $('#recSave').onclick=function(){ saveEntry(false); };
   $('#recReflect').onclick=function(){ saveEntry(true); };
 }
@@ -1331,7 +1349,7 @@ function ctxFor(k){
 var SYS_BASE = 'You are reviewing a private journal for Jon, a Brisbane-based food & beverage product developer who trains 4x/week, is building his own app ventures on the side, and is working through the 5Brains performance model (Executive Performance Partners). ';
 function brainsLens(){ return 'THE 5BRAINS LENS — assess everything against these five cognitive jobs (Jon does NOT self-rate these; infer each brain\'s state from what he says and does: his answers to targeted daily questions, journal entries, energy pulses and behaviour): '+S.brains.map(function(b){return b.name+'Brain = '+b.job+' ("'+b.q+'")';}).join('; ')+'. Identify which brain is driving, which is under-served or over-firing, and what would bring the system back into balance. Use the brain names exactly as given. '; }
 var PROMPT_Q = SYS_BASE + 'Respond as a performance psychologist trained in the 5Brains model. Jon has answered one targeted question designed to probe a particular brain, without being told which. Infer the brain states from his actual words and the day context. Answers often reveal other brains too. Use the state "unclear" and confidence "low" when the answer is too thin; do not over-read. Keep the note to one or two sentences: specific, warm, direct.\nReturn ONLY JSON: {"primary":{"brain":"name","state":"balanced|under-served|over-firing|unclear","confidence":"low|medium|high"},"other_reads":[{"brain":"name","state":"","evidence":"short"}],"evidence":"short quote from his answer","note":"","follow_up":"one sharper follow-up question, or null"}';
-var PROMPT_FEEL = SYS_BASE + 'Respond as an experienced, warm but direct performance psychologist doing reflective practice. Frameworks, in priority order: (1) the 5Brains lens; (2) energy management (Loehr & Schwartz: physical, emotional, mental, purpose energy — identify what drained and what charged); (3) CBT thinking patterns; (4) ACT — especially the gap between the calm face shown and the revs underneath (the mask), and defusion from moving-goalpost thinking; (5) Lazarus stress appraisal — did this land as threat or challenge; (6) self-determination needs (autonomy, competence, relatedness); (7) emotional granularity — name feelings precisely. Always consider WHEN this was recorded (time of day, what preceded it, recent pulses, recovery done or skipped) — the time-of-day pattern is a core goal. This is reflection, not diagnosis — never label disorders. Be specific to what he actually said; quote short phrases as evidence. Name thinking patterns (e.g. all-or-nothing, catastrophising, mind-reading, should-statements) only where the words genuinely show them. Link to sleep/energy/training data when it plausibly explains something. Keep each field tight. If there is any indication of self-harm, suicidal thinking or being unsafe, set risk_flag true and write a caring risk_note encouraging him to contact Lifeline 13 11 14 or 000.\nReturn ONLY JSON: {"summary":"2-3 sentences","five_brains":{"driving":"brain name","read":[{"brain":"name","state":"over-firing|under-served|balanced|quiet","evidence":"short"}],"rebalance":"one sentence"},"emotions":[{"name":"","intensity":1-10}],"themes":[""],"thinking_patterns":[{"pattern":"","evidence":"short quote","challenge":"gentle counter-question or alternative view"}],"needs":[""],"strengths":[""],"body_link":"how sleep/energy/training/food/recovery may be feeding in, or null","energy_ledger":{"drains":[""],"chargers":[""]},"mask_gap":"comment on surface-calm vs revs-underneath if relevant, else null","appraisal":"threat|challenge|mixed","timing":"what the time of day and lead-up suggest","reframe":"","one_action":"one small concrete action for the next 24h","question":"one question to sit with","risk_flag":false,"risk_note":null}';
+var PROMPT_FEEL = SYS_BASE + 'This is a feelings-and-thoughts journal entry: it may be emotional, or just thoughts about his day, work or life; reflect on whichever it is. Respond as an experienced, warm but direct performance psychologist doing reflective practice. Frameworks, in priority order: (1) the 5Brains lens; (2) energy management (Loehr & Schwartz: physical, emotional, mental, purpose energy — identify what drained and what charged); (3) CBT thinking patterns; (4) ACT — especially the gap between the calm face shown and the revs underneath (the mask), and defusion from moving-goalpost thinking; (5) Lazarus stress appraisal — did this land as threat or challenge; (6) self-determination needs (autonomy, competence, relatedness); (7) emotional granularity — name feelings precisely. Always consider WHEN this was recorded (time of day, what preceded it, recent pulses, recovery done or skipped) — the time-of-day pattern is a core goal. This is reflection, not diagnosis — never label disorders. Be specific to what he actually said; quote short phrases as evidence. Name thinking patterns (e.g. all-or-nothing, catastrophising, mind-reading, should-statements) only where the words genuinely show them. Link to sleep/energy/training data when it plausibly explains something. Keep each field tight. If there is any indication of self-harm, suicidal thinking or being unsafe, set risk_flag true and write a caring risk_note encouraging him to contact Lifeline 13 11 14 or 000.\nReturn ONLY JSON: {"summary":"2-3 sentences","five_brains":{"driving":"brain name","read":[{"brain":"name","state":"over-firing|under-served|balanced|quiet","evidence":"short"}],"rebalance":"one sentence"},"emotions":[{"name":"","intensity":1-10}],"themes":[""],"thinking_patterns":[{"pattern":"","evidence":"short quote","challenge":"gentle counter-question or alternative view"}],"needs":[""],"strengths":[""],"body_link":"how sleep/energy/training/food/recovery may be feeding in, or null","energy_ledger":{"drains":[""],"chargers":[""]},"mask_gap":"comment on surface-calm vs revs-underneath if relevant, else null","appraisal":"threat|challenge|mixed","timing":"what the time of day and lead-up suggest","reframe":"","one_action":"one small concrete action for the next 24h","question":"one question to sit with","risk_flag":false,"risk_note":null}';
 var PROMPT_IDEA = SYS_BASE + 'Respond as a sharp, honest product strategist and thinking partner. Turn the rambling voice note into a crisp idea brief. Note the time of day and his energy state when the idea came — this feeds a map of his best creative windows. Be candid about weaknesses. Note how it connects to his other ventures or earlier ideas if relevant, and whether it competes for his limited time.\nReturn ONLY JSON: {"title":"","summary":"2 sentences","brains_check":[{"brain":"name","verdict":"how this idea looks through that brain (e.g. Red: what threat or risk does it trigger; Yellow: is there evidence; Blue: is the next action clear; Orange: who needs to trust it; Pink: what possibility it opens)"}],"core_insight":"","who_for":"","assumptions":[""],"risks":[""],"next_step":"smallest test this week","effort":"low|medium|high","excitement_vs_evidence":"one line on whether the energy is backed by evidence","captured_when":"time block + energy state at capture","connections":[""],"tags":[""]}';
 var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nAlso check whether the ACTUAL weather (heat, feels-like temperature, humidity, rain, cloud) lines up with his energy, sleep, mood, pulses or missed days; say so plainly if there is no clear link. Also analyse missed days: count, the reasons he logged, the real pattern (e.g. a weekday, a sleep or meeting load that precedes misses) and one practical fix. Use his Sunday "common thread" answer if present.\nReturn ONLY JSON: {"headline":"one line","misses":{"count":0,"top_reasons":[""],"pattern":"","fix":""},"weather":"one or two sentences on whether weather showed up in the data","time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
 
@@ -1406,6 +1424,7 @@ async function runWeekly(){
 }
 
 // ───────────────────────── entries UI ─────────────────────────
+var KIND_LABEL={feelings:'Feelings & thoughts',ideas:'Ideas',weekly:'Weekly review',pulse:'Energy pulse'};
 var ICON={feelings:ic('heart','sm'),ideas:ic('bulb','sm'),weekly:ic('compass','sm'),pulse:ic('zap','sm')};
 function entryRow(e){
   if(e.kind==='pulse'){ var pa=e.analysis||{}; return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ic('zap','sm')+' <span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span><span class="tag">'+esc(pa.block||'')+'</span></div><p>Energy '+(pa.energy||'–')+(pa.revs?' · revs '+pa.revs:'')+(pa.context?' · '+esc(pa.context):'')+(e.transcript?' — '+esc(e.transcript):'')+'</p></button>'; }
@@ -1480,7 +1499,7 @@ function analysisHTML(e){
 var SHEET_ID=null;
 function openEntry(id){
   var e=S.entries.find(function(x){return x.id===id;}); if(!e) return; SHEET_ID=id;
-  var h='<div class="row" style="margin-bottom:8px"><div><b>'+ICON[e.kind]+' '+esc(e.kind[0].toUpperCase()+e.kind.slice(1))+'</b><div class="small muted">'+esc(niceDate(e.date))+' · '+new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'</div></div><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
+  var h='<div class="row" style="margin-bottom:8px"><div><b>'+ICON[e.kind]+' '+esc(KIND_LABEL[e.kind]||e.kind)+'</b><div class="small muted">'+esc(niceDate(e.date))+' · '+new Date(e.created_at).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'})+'</div></div><button class="btn sm" style="flex:none" id="shClose">Done</button></div>';
   if(e.kind==='pulse'){ var pa=e.analysis||{}; h+='<p>Energy <b>'+scaleWord('energy',pa.energy)+'</b> · revs underneath <b>'+scaleWord('revs',pa.revs)+'</b><br>'+esc(ctxList(pa).join(' + '))+'</p>'; }
   if(e.kind==='feelings'||e.kind==='ideas'||e.kind==='pulse') h+='<details'+(e.analysis?'':' open')+'><summary class="small muted" style="margin:6px 0">Transcript</summary><textarea id="shTx" rows="6">'+esc(e.transcript)+'</textarea></details>';
   if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting… you can leave this screen.</p>';
@@ -1679,7 +1698,7 @@ function renderReport(){
   h+='<h3>Supporting observations</h3><table><tr><th>Observation from the debrief</th><th>What the data shows</th></tr>'+
      '<tr><td>Calm surface, high revs underneath</td><td>Avg revs '+fmt(R.revs)+'/5 against avg energy '+fmt(R.pulseE)+'/5</td></tr>'+
      '<tr><td>Goals reset upward mid-day</td><td>'+(R.goalMoved==null?'not logged yet':'Goalposts moved on '+R.goalMoved+'% of '+R.goalN+' logged days; original target hit '+fmt(R.hitTarget,'%'))+'</td></tr></table>';
-  h+='<h2>3. Energy by time of day</h2><table><tr><th>Time block</th><th>Avg energy</th><th>Avg revs</th><th>Readings</th><th>Ideas</th><th>Feelings</th><th>Walks</th></tr>'+
+  h+='<h2>3. Energy by time of day</h2><table><tr><th>Time block</th><th>Avg energy</th><th>Avg revs</th><th>Readings</th><th>Ideas</th><th>Feelings &amp; thoughts</th><th>Walks</th></tr>'+
      R.tod.by_block.map(function(b){return '<tr><td>'+b.block+'</td><td>'+heat(b.avg_energy)+'</td><td>'+heat(b.avg_revs,true)+'</td><td>'+b.n+'</td><td>'+b.ideas+'</td><td>'+b.feelings+'</td><td>'+b.walks+'</td></tr>';}).join('')+'</table>';
   h+='<h3>Drains vs chargers (avg energy by activity)</h3>'+(R.tod.by_activity.length?'<table><tr><th>Doing</th><th>Avg energy</th><th>n</th></tr>'+R.tod.by_activity.map(function(a){return '<tr><td>'+esc(a.doing)+'</td><td>'+heat(a.avg_energy)+'</td><td>'+a.n+'</td></tr>';}).join('')+'</table>':'<p class="muted">No tagged pulses yet.</p>');
   if(A&&A.optimal_day&&A.optimal_day.length){ h+='<h3>Draft optimal day</h3><table><tr><th>When</th><th>What</th><th>Why (evidence)</th></tr>'+A.optimal_day.map(function(r){return '<tr><td contenteditable>'+esc(r.time)+'</td><td contenteditable>'+esc(r.do)+'</td><td contenteditable>'+esc(r.why)+'</td></tr>';}).join('')+'</table>'; }
