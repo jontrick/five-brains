@@ -554,7 +554,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.18.0';
+var APP_VERSION = '1.18.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -1555,7 +1555,12 @@ function entryRow(e){
 }
 function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
 var SPOT_RE=/\b(can you|could you|need to (add|build|make|try|start|get|set up)|would be (good|great|nice|cool|handy)|it'?d be (good|great|nice|cool)|what if|maybe i (could|should|need)|i (could|should) (try|start|build|make|set up)|an idea|idea is|i want to (build|make|try|add|start)|i wish|wish (there|it)|how about|we should|should (add|build|make|try))\b/i;
-function spotSentences(txt){ if(!txt) return []; return String(txt).replace(/\s+/g,' ').split(/(?<=[.!?])\s+/).filter(function(x){ return SPOT_RE.test(x); }).map(function(x){ x=x.trim(); return x.length>220?x.slice(0,217)+'...':x; }); }
+function spotSentences(txt){ if(!txt) return []; var out=[];
+  String(txt).replace(/\s+/g,' ').split(/(?<=[.!?])\s+/).forEach(function(x){ x=x.trim(); var m=SPOT_RE.exec(x); if(!m) return;
+    if(x.length<=200){ out.push(x); return; }
+    var w=x.split(' '), pos=0, hit=0; for(var i=0;i<w.length;i++){ if(pos>=m.index){ hit=i; break; } pos+=w[i].length+1; hit=i; }
+    var a=Math.max(0,hit-8), b=Math.min(w.length,hit+22); out.push((a>0?'...':'')+w.slice(a,b).join(' ')+(b<w.length?'...':'')); });
+  return out; }
 function spottedIdeas(){
   var sent=S.spotSent||{}, out=[], st=S.settings.start||''; var swept={}; Object.keys(sent).forEach(function(x){ var h=x.indexOf('#'); if(x.slice(0,4)!=='day:'&&h>0) swept[x.slice(0,h)]=1; });
   function add(key,date,at,src,text,ai){ if(sent[key]) return; out.push({key:key,date:date,at:at,src:src,text:text,ai:!!ai}); }
