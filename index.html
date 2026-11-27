@@ -511,7 +511,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 </div>
 
-<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI"><i data-ic="sparkle" class="sm mut"></i> Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button></div><div class="rp" id="rp"></div></div>
+<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI"><i data-ic="sparkle" class="sm mut"></i> Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button><button class="btn sm" id="rpFull">Include my entries: off</button></div><div class="rp" id="rp"></div></div>
 <div class="breathe" id="breathe"><div class="bt" id="bTxt">Get comfortable</div>
 <div class="bwrap"><svg class="bring" viewBox="0 0 240 240"><circle class="trk" cx="120" cy="120" r="110"/><circle class="arc" id="bArc" cx="120" cy="120" r="110"/></svg><div class="orb" id="orb"></div><div class="bsec" id="bSec"></div></div>
 <div id="bCnt" style="font-size:14px;opacity:.8">4 in · 6 out · 4 rounds</div>
@@ -543,7 +543,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.12.5';
+var APP_VERSION = '1.13.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -1738,9 +1738,14 @@ function renderReport(){
   var mt={}, mn=0; R.keys.forEach(function(k){ var d=S.days[k]; if(d&&d.log&&d.log.miss){ mn++; (d.log.miss.reasons||[]).forEach(function(r){ mt[r]=(mt[r]||0)+1; }); } });
   h+='<h3>Missed days: what got in the way</h3>'+(mn?'<table><tr><th>Reason</th><th>Days</th></tr>'+Object.keys(mt).sort(function(a,b){return mt[b]-mt[a];}).map(function(r){return '<tr><td>'+esc(r)+'</td><td>'+mt[r]+'</td></tr>';}).join('')+'</table><p class="muted small">'+mn+' missed days with a reason logged.</p>':'<p class="muted">No missed-day reasons logged.</p>');
   h+='<h2 class="pb">5. Reflections</h2>';
-  if(A){ h+='<h3>Key patterns</h3>'+L(A.key_patterns)+'<h3>What worked</h3>'+L(A.what_worked)+'<h3>What didn\'t</h3>'+L(A.what_didnt)+'<h3>Recurring themes (journal)</h3>'+L(A.themes)+'<h3>Proposed next phase</h3>'+L(A.next_phase)+'<h3>Questions for Dave</h3>'+L(A.questions_for_dave); }
+  if(A){ h+='<h3>Key patterns</h3>'+L(A.key_patterns)+'<h3>What worked</h3>'+L(A.what_worked)+'<h3>What didn\'t</h3>'+L(A.what_didnt)+'<h3>Recurring themes (journal)</h3>'+L(A.themes)+(A.ideas_digest&&A.ideas_digest.length?'<h3>Ideas digest</h3>'+L(A.ideas_digest):'')+'<h3>Proposed next phase</h3>'+L(A.next_phase)+'<h3>Questions for Dave</h3>'+L(A.questions_for_dave); }
   else h+='<p class="muted">Tap “Write AI summary” to draft patterns, what worked, themes and questions for Dave. Journal entries are summarised as themes only; no raw transcripts go in the report.</p>';
   h+='<p class="muted small">Data: '+R.feelings+' feelings entries · '+R.ideas+' idea entries · '+R.pulses+' energy pulses · '+R.weeklies.length+' weekly reviews.</p>';
+  if(S.settings.reportFull){
+    var all=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().sort(function(a,b){return a.created_at<b.created_at?-1:1;});
+    h+='<h2 class="pb">Appendix: journal entries, word for word ('+all.length+')</h2><p class="muted small">Included because Jon switched this on. Turn it off before sharing if you want them private.</p>'+
+      all.map(function(e){ var a=e.analysis; return '<div style="break-inside:avoid;margin:10px 0"><h3>'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+' · '+(e.kind==='ideas'?'Idea':'Feelings &amp; thoughts')+(a&&a.title?': '+esc(a.title):'')+'</h3><p style="white-space:pre-wrap">'+esc(e.transcript)+'</p>'+(a&&(a.summary||a.one_action||a.next_step)?'<div class="box g"><b>Reflection:</b> '+esc(a.summary||'')+((a.one_action||a.next_step)?' <i>Next: '+esc(a.one_action||a.next_step)+'</i>':'')+'</div>':'')+'</div>'; }).join('');
+  }
   h+='<h2 class="pb">Appendix: how the 5 Brains app works</h2>'+
    '<p>This is a personal PWA on Jon\'s phone, built after the EPP 5Brains debrief as his “notepad” for logging what comes before his highs and lows. It is linked two ways with Phoenix, his training and nutrition app.</p>'+
    '<table><tr><th>Feature</th><th>What it captures</th><th>Why</th></tr>'+
@@ -1764,15 +1769,19 @@ async function reportAI(){
   try{
     var R=reportStats(); var copy=JSON.parse(JSON.stringify(R)); delete copy.keys; delete copy.weeklies;
     var weeks=R.weeklies.map(function(e){return {date:e.date, analysis:e.analysis};});
-    var ents=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice(0,80)
-      .map(function(e){return {date:e.date,time:hhmm(e.created_at),block:blockOf(e.created_at),kind:e.kind,summary:e.analysis?(e.analysis.summary||e.analysis.title):e.transcript.slice(0,300),driving:e.analysis&&e.analysis.five_brains&&e.analysis.five_brains.driving};});
-    var prompt='You are a performance psychologist writing a progress report Jon will hand to his EPP coach David Munro at their next session. Write in plain, direct Australian English, first person from Jon\'s point of view where natural. Base every claim on the data and name the evidence (numbers, time blocks). Say clearly where the data is thin. Never quote raw journal text. Focus on David\'s core theme (energy efficiency) and his two focus points. Return ONLY JSON: {"executive_summary":"4-6 sentences","focus1":"assessment of diary/energy protection, 2-4 sentences","focus2":"assessment of active recovery, 2-4 sentences","optimal_day":[{"time":"","do":"","why":"evidence"}],"key_patterns":[""],"what_worked":[""],"what_didnt":[""],"themes":["recurring journal themes, abstracted"],"next_phase":["max 4"],"questions_for_dave":["max 5"]}';
-    var a=await callClaude(prompt,{stats:copy, weekly_reviews:weeks, entry_summaries:ents});
+    var budget=60000;
+    var ents=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().reverse()
+      .map(function(e){ var tx=e.transcript.slice(0,3000); budget-=tx.length; return {date:e.date,time:hhmm(e.created_at),block:blockOf(e.created_at),kind:e.kind==='feelings'?'feelings & thoughts':'idea',
+        transcript: budget>0 ? tx : tx.slice(0,300),
+        reflection: e.analysis ? {summary:e.analysis.summary||e.analysis.title, driving:e.analysis.five_brains&&e.analysis.five_brains.driving, themes:e.analysis.themes||e.analysis.tags, one_action:e.analysis.one_action||e.analysis.next_step} : null}; });
+    var pulses=S.entries.filter(function(e){return e.kind==='pulse'&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).map(function(e){ var a=e.analysis||{}; return {date:e.date,time:hhmm(e.created_at),energy:a.energy,revs:a.revs,doing:ctxList(a).join(' + '),before:e.transcript||null}; });
+    var prompt='You are a performance psychologist writing a progress report Jon will hand to his EPP coach David Munro at their next session. Write in plain, direct Australian English, first person from Jon\'s point of view where natural. Base every claim on the data and name the evidence (numbers, time blocks). Say clearly where the data is thin. Read every journal transcript in full (feelings & thoughts, and ideas) and every pulse note: use them for themes, recurring triggers and what precedes highs and lows. Paraphrase; never quote journal text word for word, and never name colleagues or customers. Add an ideas digest: the recurring ideas and which deserve attention. Focus on David\'s core theme (energy efficiency) and his two focus points. Return ONLY JSON: {"executive_summary":"4-6 sentences","focus1":"assessment of diary/energy protection, 2-4 sentences","focus2":"assessment of active recovery, 2-4 sentences","optimal_day":[{"time":"","do":"","why":"evidence"}],"key_patterns":[""],"what_worked":[""],"what_didnt":[""],"themes":["recurring journal themes, abstracted"],"ideas_digest":["recurring ideas, one line each, with a verdict"],"next_phase":["max 4"],"questions_for_dave":["max 5"]}';
+    var a=await callClaude(prompt,{stats:copy, weekly_reviews:weeks, journal:ents, energy_pulses:pulses});
     S.settings.reportAI={to:R.to, data:a, at:new Date().toISOString()}; save(); renderReport(); toast('Summary drafted. Tap any text to edit it.');
   }catch(e){ toast(e.message); }
   b.disabled=false; b.innerHTML=ic('sparkle','sm mut')+' Write AI summary';
 }
-function openReport(){ renderReport(); $('#report').classList.add('on'); document.body.classList.add('printing'); }
+function openReport(){ var rf=$('#rpFull'); if(rf) rf.textContent='Include my entries: '+(S.settings.reportFull?'on':'off'); renderReport(); $('#report').classList.add('on'); document.body.classList.add('printing'); }
 function closeReport(){ $('#report').classList.remove('on'); document.body.classList.remove('printing'); }
 
 // ───────────────────────── settings ─────────────────────────
@@ -1842,6 +1851,7 @@ function bindSettings(){
   $('#jFilter').onchange=renderJournal;
   $$('[data-report]').forEach(function(b){ b.onclick=openReport; });
   $('#rpClose').onclick=closeReport; $('#rpAI').onclick=reportAI;
+  $('#rpFull').onclick=function(){ S.settings.reportFull=!S.settings.reportFull; save(); this.textContent='Include my entries: '+(S.settings.reportFull?'on':'off'); renderReport(); };
   $('#rpPrint').onclick=function(){ try{ window.print(); }catch(e){ toast('Use Download, open it in Safari, then Share → Print'); } };
   $('#rpHtml').onclick=function(){ var css=Array.prototype.map.call(document.querySelectorAll('style'),function(x){return x.textContent;}).join('\n');
     var html='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5 Brains report '+todayKey()+'</title><style>'+css+' .report{position:static;display:block}</style></head><body class="printing"><div class="report on"><div class="rp">'+$('#rp').innerHTML+'</div></div></body></html>';
