@@ -400,7 +400,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
   <div class="card">
     <h2><i data-ic="target"></i> System review <span class="tag" id="srTag"></span></h2>
-    <p class="muted small" style="margin:0 0 10px">How much you actually use each part of the app, what's worth keeping, and what to simplify or add later. Do one after 2 weeks, then every 3 months.</p>
+    <p class="muted small" style="margin:0 0 10px">How much you actually use each part of the app, what's worth keeping, and what to simplify or add later. First one Saturday 5 Dec, then every 3 months on a Saturday.</p>
     <button class="btn full" id="srOpen">Review the app</button>
   </div>
   <div class="card">
@@ -548,7 +548,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.14.0';
+var APP_VERSION = '1.14.1';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -830,7 +830,9 @@ function usageStats(from,to){
     ks.forEach(function(k){ var d=S.days[k]||{checks:{}}, L=d.log||{}; if(f[2](k,d,L)){ used++; last=k; count+= f[3]?f[3](k):1; } });
     return {id:f[0], name:f[1], days_used:used, of_days:ks.length, pct:Math.round(used/n*100), total:count, last_used:last}; });
 }
-function srDue(){ var r=(S.reviews||[]).slice(-1)[0]; if(!r) return diffDays(S.settings.start,todayKey())>=14; return todayKey()>=r.next; }
+function satOnOrBefore(k){ var p=k.split('-'), d=new Date(+p[0],+p[1]-1,+p[2]); return addDays(k,-((d.getDay()+1)%7)); }
+function srNext(){ var r=(S.reviews||[]).slice(-1)[0]; return r ? r.next : (S.settings.firstReview||'2026-12-05'); }
+function srDue(){ return todayKey()>=srNext(); }   // shows from the Saturday, and stays every day after until a review is saved
 function openSystemReview(){
   bump('system_review');
   var from=(S.reviews&&S.reviews.length)?S.reviews[S.reviews.length-1].date:S.settings.start, to=todayKey(), U=usageStats(from,to), prev=(S.reviews||[]).slice(-1)[0];
@@ -853,7 +855,7 @@ function openSystemReview(){
   $$('#sheetBody [data-dict]').forEach(function(b){ b.onclick=function(){ dictate($('#'+b.dataset.dict), b); }; });
   $('#srAI').onclick=async function(){
     var btn=this; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Thinking…';
-    var rev={date:to, from:from, next:addDays(to,91), usage:U, votes:Object.assign({},V), worse:$('#srWorse').value.trim(), better:$('#srBetter').value.trim(), parked:$('#srPark').value.trim(), ai:null};
+    var rev={date:to, from:from, next:satOnOrBefore(addDays(to,91)), usage:U, votes:Object.assign({},V), worse:$('#srWorse').value.trim(), better:$('#srBetter').value.trim(), parked:$('#srPark').value.trim(), ai:null};
     try{
       rev.ai=await callClaude('You are helping Jon refine his own personal 5 Brains app after using it for a while. Goal from his EPP coach: energy efficiency, so the app itself must cost little energy to use. You get measured usage per feature (days used out of days available), his keep/simplify/drop votes, what annoys him, what helps, his parked ideas, and the previous review if any. Be blunt and practical. Recommend a leaner daily routine: what to keep, what to merge or simplify, what to switch off for now, and which parked ideas are worth adding at the next review. Base it on the numbers. Return ONLY JSON: {"headline":"one line","keep":[""],"simplify":[{"feature":"","how":""}],"switch_off":[{"feature":"","why":""}],"add_next_time":[""],"leaner_day":["the daily routine in 3-6 steps"],"watch_until_next_review":[""]}',
         {review:rev, previous_review: (S.reviews||[]).slice(-1)[0]||null, days_tracked: rangeKeys(S.settings.start,to).length});
@@ -883,7 +885,7 @@ function renderMiss(){
     h+='<div class="card"><h2>'+ic('compass')+' Week check: '+wm.length+' missed day'+(wm.length>1?'s':'')+'</h2><div class="chips" style="margin-bottom:8px">'+Object.keys(tally).map(function(r){return '<span class="chip">'+esc(r)+' ×'+tally[r]+'</span>';}).join('')+'</div>'+
       '<p class="qtext" style="font-size:16px">Looking at these, what\'s the real common thread, and what would stop it next week?</p><textarea id="wkAns" rows="3" placeholder="Type, or use your keyboard\'s mic"></textarea><div class="sp"></div><button class="btn pri full" id="wkSave">Save</button></div>';
   }
-  if(srDue() && !(S.usage&&S.usage.system_review&&S.usage.system_review.days[t])) h+='<div class="card" style="border-color:var(--acc)"><h2>'+ic('target')+' Time to review the app</h2><p class="small muted" style="margin:0 0 8px">See what you actually use, and keep, simplify or drop each part.</p><button class="btn pri full" id="srNudge">Review the app</button></div>';
+  if(srDue()) h+='<div class="card" style="border-color:var(--acc)"><h2>'+ic('target')+' Weekend app review</h2><p class="small muted" style="margin:0 0 8px">Takes about 5 minutes. See what you actually use, and keep, simplify or drop each part. Stays here until you do it.</p><button class="btn pri full" id="srNudge">Review the app</button></div>';
   box.innerHTML=h; var sn=$('#srNudge'); if(sn) sn.onclick=openSystemReview;
   if(k){
     $$('#mChips .chip').forEach(function(c){ c.onclick=function(){ var r=c.textContent, i=MISS_SEL.indexOf(r); if(i>=0) MISS_SEL.splice(i,1); else MISS_SEL.push(r); c.classList.toggle('on'); }; });
@@ -1530,7 +1532,7 @@ function entryRow(e){
 }
 function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
 function renderJournal(){
-  var st=$('#srTag'); if(st){ var lr=(S.reviews||[]).slice(-1)[0]; st.textContent= srDue()?'due now':(lr?'next '+niceDate(lr.next):'after 2 weeks'); st.className='tag'+(srDue()?' warn':''); }
+  var st=$('#srTag'); if(st){ var lr=(S.reviews||[]).slice(-1)[0]; st.textContent= srDue()?'due now':'next '+niceDate(srNext()); st.className='tag'+(srDue()?' warn':''); }
   var f=$('#jFilter').value;
   var list=S.entries.filter(function(e){return !e._deleted && (f==='all'?e.kind!=='pulse':e.kind===f);});
   $('#entryList').innerHTML = list.length? list.map(entryRow).join('') : '<p class="muted" style="text-align:center;margin-top:30px">No entries yet. Tap Feelings or Ideas and talk.</p>';
