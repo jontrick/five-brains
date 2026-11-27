@@ -408,6 +408,7 @@ table.tod th{color:var(--mut);font-weight:500}
     <p class="muted small" style="margin:0 0 10px">Reads the last 7 days of check-ins, journal entries and Phoenix data, then looks for patterns.</p>
     <button class="btn vio full" id="weeklyBtn">Run weekly review</button>
   </div>
+  <div id="catchUp"></div>
   <div class="row" style="margin:6px 0 10px">
     <select id="jFilter"><option value="all">All entries</option><option value="feelings">Feelings &amp; thoughts</option><option value="ideas">Ideas</option><option value="weekly">Weekly reviews</option><option value="pulse">Energy pulses</option></select>
   </div>
@@ -548,7 +549,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.14.1';
+var APP_VERSION = '1.15.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -1488,7 +1489,7 @@ var _retrying=false;
 async function retryReflections(){
   if(_retrying || !navigator.onLine) return; _retrying=true;
   try{
-    var cut=Date.now()-48*3600e3;
+    var cut=Date.parse(S.settings.start+'T00:00:00+10:00')||0;
     var todo=S.entries.filter(function(e){ return e._want && !e.analysis && !e._busy && !e._deleted && (e._tries||0)<3 && (e.kind==='feelings'||e.kind==='ideas') && Date.parse(e.created_at)>cut; });
     for(var i=0;i<todo.length;i++) await reflectEntry(todo[i].id, true);
     var t=todayKey(), Q=S.days[t]&&S.days[t].log&&S.days[t].log.q; if(Q&&Q.answer&&!Q.read&&!Q._busy) await readQuestion(t);
@@ -1506,8 +1507,22 @@ async function reflectEntry(id, quiet){
   }catch(err){ e._err=err.message; toast(err.message); console.warn(err); }
   e._busy=false; save(); renderAll(); if(SHEET_ID===id) openEntry(id);
 }
+// Fail-safe: reflect every entry (and evening question) in a date range that has no reflection yet,
+// one at a time, showing progress. Never blocks the report: failures are counted and skipped.
+async function sweepPending(from, to, onStep){
+  var todo=S.entries.filter(function(e){ return (e.kind==='feelings'||e.kind==='ideas') && !e._deleted && !e.analysis && e.date>=from && e.date<=to; });
+  var qs=rangeKeys(from,to).filter(function(k){ var Q=S.days[k]&&S.days[k].log&&S.days[k].log.q; return Q&&Q.answer&&!(Q.read&&Q.read.primary); });
+  var total=todo.length+qs.length, done=0, failed=0;
+  for(var i=0;i<todo.length;i++){ onStep&&onStep(done+1,total); await reflectEntry(todo[i].id, true); if(!todo[i].analysis) failed++; done++; }
+  for(var j=0;j<qs.length;j++){ onStep&&onStep(done+1,total); await readQuestion(qs[j]); var Q=S.days[qs[j]].log.q; if(!(Q.read&&Q.read.primary)) failed++; done++; }
+  return {total:total, failed:failed};
+}
+function pendingCount(from,to){ return S.entries.filter(function(e){ return (e.kind==='feelings'||e.kind==='ideas') && !e._deleted && !e.analysis && e.date>=from && e.date<=to; }).length +
+  rangeKeys(from,to).filter(function(k){ var Q=S.days[k]&&S.days[k].log&&S.days[k].log.q; return Q&&Q.answer&&!(Q.read&&Q.read.primary); }).length; }
 async function runWeekly(){
-  var b=$('#weeklyBtn'); b.disabled=true; b.innerHTML='<span class="spin"></span> Reviewing…';
+  var b=$('#weeklyBtn'); b.disabled=true;
+  await sweepPending(addDays(todayKey(),-6), todayKey(), function(n,tot){ b.innerHTML='<span class="spin"></span> Reflecting '+n+' of '+tot+' first…'; });
+  b.innerHTML='<span class="spin"></span> Reviewing…';
   try{
     var t=todayKey(), days=[];
     for(var i=6;i>=0;i--) days.push(ctxFor(addDays(t,-i)));
@@ -1532,6 +1547,9 @@ function entryRow(e){
 }
 function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
 function renderJournal(){
+  var cu=$('#catchUp'), pc=pendingCount(S.settings.start,todayKey());
+  if(cu){ cu.innerHTML = pc ? '<button class="btn full" id="cuBtn" style="margin:6px 0">Reflect all pending ('+pc+')</button>' : '';
+    var cb=$('#cuBtn'); if(cb) cb.onclick=async function(){ cb.disabled=true; var r=await sweepPending(S.settings.start,todayKey(),function(n,t){ cb.innerHTML='<span class="spin"></span> Reflecting '+n+' of '+t+'…'; }); toast(r.failed? (r.total-r.failed)+' of '+r.total+' done. Try again later for the rest.':'All caught up'); renderAll(); }; }
   var st=$('#srTag'); if(st){ var lr=(S.reviews||[]).slice(-1)[0]; st.textContent= srDue()?'due now':'next '+niceDate(srNext()); st.className='tag'+(srDue()?' warn':''); }
   var f=$('#jFilter').value;
   var list=S.entries.filter(function(e){return !e._deleted && (f==='all'?e.kind!=='pulse':e.kind===f);});
@@ -1818,6 +1836,7 @@ function renderReport(){
   var js=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().sort(function(a,b){return a.created_at<b.created_at?-1:1;});
   if(js.length){ h+='<h3>Journal: entry summaries</h3><table><tr><th>When</th><th>Type</th><th>Summary</th></tr>'+js.map(function(e){ var a=e.analysis, sm=a?(a.title?a.title+': ':'')+(a.summary||''):(e.transcript.split(/(?<=[.!?])\s/)[0].slice(0,160)+(e.transcript.length>160?'…':''));
       return '<tr><td>'+esc(niceDate(e.date))+' '+hhmm(e.created_at)+'</td><td>'+(e.kind==='ideas'?'Idea':'Feelings &amp; thoughts')+'</td><td>'+esc(sm)+(a?'':' <span class="muted">(not reflected yet)</span>')+'</td></tr>'; }).join('')+'</table><p class="muted small">Full transcripts are in Appendix B.</p>'; }
+  var pc=pendingCount(R.from,R.to); if(pc) h+='<p class="muted small">'+pc+' entr'+(pc===1?'y has':'ies have')+' no reflection yet. Tap Write AI summary to catch them up first; their full text is used either way.</p>';
   h+='<p class="muted small">Data: '+R.feelings+' feelings entries · '+R.ideas+' idea entries · '+R.pulses+' energy pulses · '+R.weeklies.length+' weekly reviews.</p>';
   h+='<h2 class="pb">Appendix A: how the 5 Brains app works</h2>'+
    '<p>This is a personal PWA on Jon\'s phone, built after the EPP 5Brains debrief as his “notepad” for logging what comes before his highs and lows. It is linked two ways with Phoenix, his training and nutrition app.</p>'+
@@ -1844,9 +1863,13 @@ function renderReport(){
   $('#rp').innerHTML=h;
 }
 async function reportAI(){
-  var b=$('#rpAI'); b.disabled=true; b.innerHTML='<span class="spin"></span> Writing…';
+  var b=$('#rpAI'); b.disabled=true;
+  var R0=reportStats();
+  var sw=await sweepPending(R0.from, R0.to, function(n,tot){ b.innerHTML='<span class="spin"></span> Catching up: reflecting '+n+' of '+tot+'…'; });
+  if(sw.total) toast(sw.failed ? (sw.total-sw.failed)+' of '+sw.total+' caught up. The rest still go in using their full text.' : 'All '+sw.total+' pending entries reflected.');
+  b.innerHTML='<span class="spin"></span> Writing…';
   try{
-    var R=reportStats(); var copy=JSON.parse(JSON.stringify(R)); delete copy.keys; delete copy.weeklies;
+    var R=reportStats(); R.sweep=sw; var copy=JSON.parse(JSON.stringify(R)); delete copy.keys; delete copy.weeklies;
     var weeks=R.weeklies.map(function(e){return {date:e.date, analysis:e.analysis};});
     var budget=60000;
     var ents=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().reverse()
@@ -1854,7 +1877,7 @@ async function reportAI(){
         transcript: budget>0 ? tx : tx.slice(0,300),
         reflection: e.analysis ? {summary:e.analysis.summary||e.analysis.title, driving:e.analysis.five_brains&&e.analysis.five_brains.driving, themes:e.analysis.themes||e.analysis.tags, one_action:e.analysis.one_action||e.analysis.next_step} : null}; });
     var pulses=S.entries.filter(function(e){return e.kind==='pulse'&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).map(function(e){ var a=e.analysis||{}; return {date:e.date,time:hhmm(e.created_at),energy:a.energy,revs:a.revs,doing:ctxList(a).join(' + '),before:e.transcript||null}; });
-    var prompt='You are a performance psychologist writing a progress report Jon will hand to his EPP coach David Munro at their next session. Write in plain, direct Australian English, first person from Jon\'s point of view where natural. Base every claim on the data and name the evidence (numbers, time blocks). Say clearly where the data is thin. Read every journal transcript in full (feelings & thoughts, and ideas) and every pulse note: use them for themes, recurring triggers and what precedes highs and lows. Paraphrase; never quote journal text word for word, and never name colleagues or customers. Add an ideas digest: the recurring ideas and which deserve attention. Focus on David\'s core theme (energy efficiency) and his two focus points. Return ONLY JSON: {"executive_summary":"4-6 sentences","focus1":"assessment of diary/energy protection, 2-4 sentences","focus2":"assessment of active recovery, 2-4 sentences","optimal_day":[{"time":"","do":"","why":"evidence"}],"key_patterns":[""],"what_worked":[""],"what_didnt":[""],"themes":["recurring journal themes, abstracted"],"ideas_digest":["recurring ideas, one line each, with a verdict"],"next_phase":["max 4"],"questions_for_dave":["max 5"]}';
+    var prompt='You are a performance psychologist writing a progress report Jon will hand to his EPP coach David Munro at their next session. Write in plain, direct Australian English, first person from Jon\'s point of view where natural. Base every claim on the data and name the evidence (numbers, time blocks). Say clearly where the data is thin. Read every journal transcript in full (feelings & thoughts, and ideas) and every pulse note: use them for themes, recurring triggers and what precedes highs and lows. Paraphrase; never quote journal text word for word, and never name colleagues or customers. Add an ideas digest: the recurring ideas and which deserve attention. Focus on David\'s core theme (energy efficiency) and his two focus points. Return ONLY JSON: {"executive_summary":"4-6 sentences","focus1":"assessment of diary/energy protection, 2-4 sentences","focus2":"assessment of active recovery, 2-4 sentences","optimal_day":[{"time":"","do":"","why":"evidence"}],"key_patterns":[""],"what_worked":[""],"what_didnt":[""],"themes":["recurring journal themes, abstracted"],"ideas_digest":["recurring ideas, one line each, with a verdict"],"next_phase":["max 4"],"questions_for_dave":["max 5"]} If stats.sweep.failed > 0, some entries have no reflection: rely on their transcripts.';
     var a=await callClaude(prompt,{stats:copy, weekly_reviews:weeks, journal:ents, energy_pulses:pulses});
     S.settings.reportAI={to:R.to, data:a, at:new Date().toISOString()}; save(); renderReport(); toast('Summary drafted. Tap any text to edit it.');
   }catch(e){ toast(e.message); }
