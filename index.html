@@ -394,6 +394,11 @@ table.tod th{color:var(--mut);font-weight:500}
     <button class="btn" data-rec="ideas"><i data-ic="bulb" class="big"></i>Ideas</button>
   </div>
   <div class="card">
+    <h2><i data-ic="bulb"></i> Idea sweep <span class="tag" id="isTag"></span></h2>
+    <p class="muted small" style="margin:0 0 10px">Bundles every idea you haven't sent yet into one block to paste into your chat with Claude, so it can sort them into build, research or park and action them.</p>
+    <button class="btn pri full" id="isOpen">Sweep my ideas</button>
+  </div>
+  <div class="card">
     <h2><i data-ic="file"></i> Report for Dave</h2>
     <p class="muted small" style="margin:0 0 10px">A PDF of everything since Day 1: how the app works, your results against David's two focus points, energy by time of day and a draft optimal day.</p>
     <button class="btn pri full" data-report>Open report</button>
@@ -549,7 +554,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.15.0';
+var APP_VERSION = '1.16.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -1542,11 +1547,45 @@ var ICON={feelings:ic('heart','sm'),ideas:ic('bulb','sm'),weekly:ic('compass','s
 function entryRow(e){
   if(e.kind==='pulse'){ var pa=e.analysis||{}; return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ic('zap','sm')+' <span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span><span class="tag">'+esc(pa.block||'')+'</span></div><p>Energy '+(pa.energy||'–')+(pa.revs?' · revs '+pa.revs:'')+(pa.context?' · '+esc(pa.context):'')+(e.transcript?' — '+esc(e.transcript):'')+'</p></button>'; }
   var a=e.analysis, title = e.kind==='ideas' && a && a.title ? a.title : (e.kind==='weekly'&&a?a.headline: (a&&a.summary? a.summary : e.transcript));
+  if(e.kind==='ideas' && e.sentAt) title=title+' · sent to Claude';
   var tag = e._busy?'<span class="tag"><span class="spin"></span> reflecting</span>' : (a?'<span class="tag ok">reflected</span>': (e._want && (e._tries||0)<3 ? '<span class="tag">saved · reflection pending</span>' : '<span class="tag">saved</span>'));
   return '<button class="ent" data-id="'+e.id+'"><div class="t">'+ICON[e.kind]+' <span class="small muted">'+esc(niceDate(e.date))+'</span>'+tag+'</div><p>'+esc(title)+'</p></button>';
 }
 function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
+function unsentIdeas(){ return S.entries.filter(function(e){ return e.kind==='ideas' && !e._deleted && !e.sentAt; }).sort(function(a,b){ return a.created_at<b.created_at?-1:1; }); }
+function openIdeaSweep(){
+  var ids=unsentIdeas(), pick={}; ids.forEach(function(e){ pick[e.id]=true; });
+  var last=(S.ideaSweeps||[]).slice(-1)[0];
+  var h='<div class="row" style="margin-bottom:8px"><b>Idea sweep</b><button class="btn sm" style="flex:none" id="shClose">Close</button></div>';
+  if(!ids.length){ h+='<p class="muted small">No new ideas since '+(last?esc(niceDate(last.date)):'you started')+'. Log one under Ideas and it will show up here.</p>'; }
+  else {
+    h+='<p class="small muted" style="margin:0 0 8px">'+ids.length+' new idea'+(ids.length>1?'s':'')+(last?' since your last sweep on '+esc(niceDate(last.date)):'')+'. Untick any you want to keep to yourself.</p><div class="habits">'+
+      ids.map(function(e){ var a=e.analysis; return '<button class="hab done" data-pk="'+e.id+'"><span class="box">✓</span><span class="nm"><b>'+esc(a&&a.title?a.title:e.transcript.slice(0,60))+'</b><br><span class="small muted">'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+'</span></span></button>'; }).join('')+'</div>'+
+      '<div class="sp"></div><button class="btn pri full" id="isCopy">Copy sweep for Claude</button><p class="small muted" style="margin:8px 0 0">After copying, open your chat with Claude and paste. Swept ideas are marked as sent, so they won\'t come up again.</p>';
+  }
+  if(S.ideaSweeps&&S.ideaSweeps.length) h+='<div class="lbl"><span>Past sweeps</span></div>'+S.ideaSweeps.slice().reverse().slice(0,6).map(function(w){ return '<div class="small muted" style="padding:4px 0">'+esc(niceDate(w.date))+' · '+w.count+' idea'+(w.count>1?'s':'')+'</div>'; }).join('');
+  $('#sheetBody').innerHTML=h; SHEET_ID=null; $('#sheet').classList.add('on');
+  $('#shClose').onclick=function(){ closeSheet(); renderAll(); };
+  $$('#sheetBody [data-pk]').forEach(function(b){ b.onclick=function(){ var on=!pick[b.dataset.pk]; pick[b.dataset.pk]=on; b.classList.toggle('done',on); $('.box',b).textContent=on?'✓':''; }; });
+  var cp=$('#isCopy'); if(cp) cp.onclick=function(){
+    var sel=ids.filter(function(e){ return pick[e.id]; }); if(!sel.length){ toast('Nothing ticked'); return; }
+    var lines=['5 BRAINS IDEA SWEEP · '+niceDate(todayKey())+' · '+sel.length+' idea'+(sel.length>1?'s':''),
+      'Please sort each into BUILD / RESEARCH / PARK, say which app or repo it belongs to, and action the BUILD ones (ask me first if it touches VMC or anything shared).',''];
+    sel.forEach(function(e,i){ var a=e.analysis||{};
+      lines.push((i+1)+'. '+(a.title||'Idea')+'  ['+niceDate(e.date)+' '+hhmm(e.created_at)+']');
+      lines.push('   In my words: '+e.transcript.replace(/\s+/g,' ').trim());
+      if(a.summary) lines.push('   Reflection: '+a.summary);
+      if(a.next_step) lines.push('   Suggested next step: '+a.next_step+(a.effort?' (effort: '+a.effort+')':''));
+      lines.push(''); });
+    var txt=lines.join('\n');
+    var mark=function(){ var now=new Date().toISOString(); sel.forEach(function(e){ e.sentAt=now; e.updated_at=now; e._dirty=true; });
+      S.ideaSweeps=(S.ideaSweeps||[]).concat([{date:todayKey(), at:now, count:sel.length, ids:sel.map(function(e){return e.id;})}]); save(); queueSync(); };
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){ mark(); toast('Copied '+sel.length+' idea'+(sel.length>1?'s':'')+'. Paste it into your chat with Claude.'); openIdeaSweep(); },
+      function(){ $('#sheetBody').innerHTML='<b>Idea sweep</b><p class="small muted">Press and hold in the box, Select All, then Copy.</p><textarea rows="12">'+esc(txt)+'</textarea><div class="sp"></div><button class="btn pri full" id="isDone">I\'ve copied it</button>'; $('#isDone').onclick=function(){ mark(); closeSheet(); renderAll(); toast('Marked as sent'); }; });
+  };
+}
 function renderJournal(){
+  var it=$('#isTag'); if(it){ var nu=unsentIdeas().length; it.textContent=nu?nu+' new':'all sent'; it.className='tag'+(nu?' warn':''); }
   var cu=$('#catchUp'), pc=pendingCount(S.settings.start,todayKey());
   if(cu){ cu.innerHTML = pc ? '<button class="btn full" id="cuBtn" style="margin:6px 0">Reflect all pending ('+pc+')</button>' : '';
     var cb=$('#cuBtn'); if(cb) cb.onclick=async function(){ cb.disabled=true; var r=await sweepPending(S.settings.start,todayKey(),function(n,t){ cb.innerHTML='<span class="spin"></span> Reflecting '+n+' of '+t+'…'; }); toast(r.failed? (r.total-r.failed)+' of '+r.total+' done. Try again later for the rest.':'All caught up'); renderAll(); }; }
@@ -1953,6 +1992,7 @@ function bindSettings(){
   $('#jFilter').onchange=renderJournal;
   $$('[data-report]').forEach(function(b){ b.onclick=openReport; });
   $('#srOpen').onclick=openSystemReview;
+  $('#isOpen').onclick=openIdeaSweep;
   $('#rpClose').onclick=closeReport; $('#rpAI').onclick=reportAI;
   $('#rpFull').onclick=function(){ S.settings.reportFull=(S.settings.reportFull===false); save(); this.textContent='Transcripts appendix: '+(S.settings.reportFull!==false?'on':'off'); renderReport(); };
   $('#rpPrint').onclick=function(){ try{ window.print(); }catch(e){ toast('Use Download, open it in Safari, then Share → Print'); } };
