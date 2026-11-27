@@ -133,7 +133,7 @@ nav.tabs button.on{color:var(--acc)}
 .chart{width:100%;height:90px;display:block}
 .legend{display:flex;gap:12px;font-size:11px;color:var(--mut);margin-top:4px}
 .legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
-.set-h{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;margin-bottom:6px}
+.set-h{display:grid;grid-template-columns:1fr auto auto auto auto;gap:6px;align-items:center;margin-bottom:6px}
 .set-h input{padding:8px 10px}
 .set-h select{padding:8px 6px;width:auto;font-size:12px}
 .toast{position:fixed;left:50%;top:calc(var(--sa-t) + 10px);transform:translateX(-50%) translateY(-120%);background:var(--card2);border:1px solid var(--line);padding:10px 16px;border-radius:12px;z-index:60;transition:transform .25s;font-size:14px;max-width:90vw}
@@ -468,7 +468,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
   <div class="card">
     <h2><i data-ic="checks"></i> Daily ticks</h2>
-    <p class="small muted" style="margin:0 0 10px">Req = counts toward a perfect day. Auto-tick sources fill themselves from Phoenix or the app. You can still tick any item by hand.</p>
+    <p class="small muted" style="margin:0 0 10px">Wkdays = only expected on work days (not weekends). Req = counts toward a perfect day. Auto-tick sources fill themselves from Phoenix or the app. You can still tick any item by hand.</p>
     <div id="habEdit"></div>
     <button class="btn sm" id="habAdd">+ Add tick</button>
   </div>
@@ -554,7 +554,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.16.0';
+var APP_VERSION = '1.17.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -565,8 +565,8 @@ var DEFAULT_HABITS = [
   {id:'am',      name:'Morning check-in',        auto:'am_checkin', req:true},
   {id:'q',       name:'Today\'s question',       auto:'question',   req:true},
   {id:'weigh',   name:'Weigh in',                auto:'weighed',    req:true},
-  {id:'diary',   name:'Reviewed tomorrow\'s diary', auto:'none',   req:true},
-  {id:'pulse',   name:'Logged highs & lows',     auto:'pulse',      req:true},
+  {id:'diary',   name:'Reviewed tomorrow\'s diary', auto:'none',   req:true, workOnly:true},
+  {id:'pulse',   name:'Logged highs & lows',     auto:'pulse',      req:true, workOnly:true},
   {id:'walk',    name:'7-min walk',              auto:'walk',       req:true},
   {id:'snack',   name:'Meals & snacks',          auto:'snack',      req:true},
   {id:'breath',  name:'4-6 breathing',           auto:'breath',     req:true},
@@ -678,7 +678,7 @@ function load(){
       s.scale5=true;
     }
     if(s.settings.aiModel==='claude-opus-5-5' && !s.modelSonnet){ s.settings.aiModel='claude-sonnet-4-5'; } s.modelSonnet=true; // v1.12.3: Sonnet (Opus too slow via proxy)
-    (s.habits||[]).forEach(function(h){ if(h.name==='Recovery snacks') h.name='Meals & snacks'; });
+    (s.habits||[]).forEach(function(h){ if(h.name==='Recovery snacks') h.name='Meals & snacks'; if(!s.woSet && (h.id==='diary'||h.id==='pulse'||h.id==='walktalk')) h.workOnly=true; }); s.woSet=true;
     (s.habits||[]).forEach(function(h){ if(h.auto==='brains'){ h.id='q'; h.name='Today\'s question'; h.auto='question'; } });
     return s; } }catch(e){}
   return blank();
@@ -719,7 +719,9 @@ function autoVal(h,k){
   return false;
 }
 function habitDone(h,k){ var d=S.days[k]; return autoVal(h,k) || !!(d && d.checks && d.checks[h.id]); }
-function isPerfect(k){ var req=S.habits.filter(function(h){return h.req;}); if(!req.length) return false; return req.every(function(h){return habitDone(h,k);}); }
+function isWeekend(k){ var t=dayType(k); if(t) return t==='weekend'; var p=k.split('-'), d=new Date(+p[0],+p[1]-1,+p[2]).getDay(); return d===0||d===6; }
+function reqFor(k){ var we=isWeekend(k); return S.habits.filter(function(h){ return h.req && !(we && h.workOnly); }); }
+function isPerfect(k){ var req=reqFor(k); if(!req.length) return false; return req.every(function(h){return habitDone(h,k);}); }
 var DAY_TYPES=[['work','Work day'],['weekend','Weekend'],['leave','Annual leave'],['sick','Sick'],['rest','Rest day']];
 function dayType(k){ var d=S.days[k]; return (d&&d.log&&d.log.dayType)||null; }
 function isOff(k){ var t=dayType(k); return t==='leave'||t==='sick'||t==='rest'; }
@@ -743,7 +745,7 @@ function ask(msg, yes){ return new Promise(function(res){ var m=$('#ask'); $('#a
 var _tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('on');},2200); }
 
 function bestStreak(){ var b=0,c=0; rangeKeys(S.settings.start,todayKey()).forEach(function(k){ if(isOff(k)) return; if(isPerfect(k)){c++; b=Math.max(b,c);} else if(k<todayKey()) c=0; }); return b; }
-function reqMissed(k){ return S.habits.filter(function(h){return h.req && !habitDone(h,k);}).map(function(h){return h.name;}); }
+function reqMissed(k){ return reqFor(k).filter(function(h){return !habitDone(h,k);}).map(function(h){return h.name;}); }
 function renderHeader(){
   var t=todayKey(), hit=0, n=0;
   for(var i=1;i<=14;i++){ var k=addDays(t,-i); if(k<S.settings.start) break; if(isOff(k)) continue; n++; if(isPerfect(k)) hit++; }
@@ -766,7 +768,7 @@ function weekMisses(){ var t=todayKey(), out=[]; for(var i=1;i<=7;i++){ var k=ad
 function renderClose(){
   var box=$('#closeBox'); if(!box) return; var k=todayKey(), d=day(k), L=d.log||{};
   if(L.closed){
-    var req=S.habits.filter(function(h){return h.req;}), dn=req.filter(function(h){return habitDone(h,k);}).length;
+    var req=reqFor(k), dn=req.filter(function(h){return habitDone(h,k);}).length;
     box.innerHTML='<div class="card closed"><h2>'+ic('checks')+' Day closed <span class="tag ok">'+(isOff(k)?esc((DAY_TYPES.filter(function(x){return x[0]===dayType(k);})[0]||[])[1]||'off'):dn+'/'+req.length+' done')+'</span></h2>'+
       '<p class="small muted" style="margin:0">Closed at '+hhmm(L.closed.at)+(L.closed.note?' · '+esc(L.closed.note):'')+'. You can still change anything until midnight.</p>'+
       '<button class="btn sm" style="margin-top:8px" id="reopenDay">Reopen</button></div>';
@@ -941,10 +943,10 @@ function renderToday(){
   var box=$('#habits'); box.innerHTML='';
   var req=0, reqDone=0, doneEls=[], autos=[];
   S.habits.forEach(function(h){
-    var auto=autoVal(h,k), done=habitDone(h,k); if(h.req){req++; if(done) reqDone++;}
+    var auto=autoVal(h,k), done=habitDone(h,k), off=(h.workOnly&&isWeekend(k)); if(h.req&&!off){req++; if(done) reqDone++;}
     var b=document.createElement('button'); b.className='hab'+(done?' done':'');
     b.innerHTML='<span class="box">'+(done?'✓':'')+'</span><span class="nm">'+esc(h.name)+'</span>'+
-      (h.auto!=='none'?'<span class="src">'+(auto?'auto':'')+'</span>':'')+(h.req?'':'<span class="req">bonus</span>');
+      (h.auto!=='none'?'<span class="src">'+(auto?'auto':'')+'</span>':'')+(off?'<span class="req">weekday</span>':(h.req?'':'<span class="req">bonus</span>'));
     b.onclick=function(){ if(auto){ toast('Auto-ticked from '+AUTO_LABEL[h.auto]); return; } d.checks[h.id]=!d.checks[h.id]; touchDay(); renderToday(); renderHeader(); };
     if(h.auto!=='none') autos.push('<span class="chip" style="'+(done?'border-color:#2f5238;color:var(--ok)':'color:var(--dim)')+'">'+(done?'✓ ':'○ ')+esc(h.name)+'</span>');
     else if(done) doneEls.push(b); else box.appendChild(b);
@@ -980,7 +982,7 @@ function applyFolds(){
   $('#amSum').textContent = (d.sleep_hours||d.energy_am) ? ((d.sleep_hours?d.sleep_hours+' h sleep':'')+(d.sleep_quality?' · '+slOf('sleep_quality')[d.sleep_quality-1].toLowerCase()+' sleep':'')+(d.energy_am?' · energy '+slOf('energy')[d.energy_am-1].toLowerCase():'')+(d.intention?' · '+d.intention:'')) : 'Tap to start';
   var pmDone=autoVal({auto:'pm_checkin'},k), q=L.q, qDone=!!(q&&q.answer);
   $('#pmSum').textContent = (pmDone||qDone) ? ((pmDone?'Energy '+slOf('energy')[d.energy_pm-1].toLowerCase()+' · mood '+slOf('mood')[d.mood-1].toLowerCase()+' · stress '+slOf('stress')[d.stress-1].toLowerCase():'Scores not done')+' · '+(qDone?'question answered'+(q.read&&q.read.primary?' ('+q.read.primary.brain+' '+q.read.primary.state+')':''):'question still to answer')) : (arvo?'Tap to start: a few scores, then one question':'Opens this arvo. Tap to open now.');
-  var req=S.habits.filter(function(h){return h.req;}), dn=req.filter(function(h){return habitDone(h,k);}).length;
+  var req=reqFor(k), dn=req.filter(function(h){return habitDone(h,k);}).length;
   $('#tkSum').textContent = dn+' of '+req.length+' done today'+(dn<req.length?' · tap to see what\'s left':'');
 }
 function brainById(id){ return S.brains.find(function(b){return b.id===id;})||S.brains[0]; }
@@ -1423,7 +1425,7 @@ function ctxFor(k){
     question_of_the_day: (L.q&&L.q.answer)? {probes:brainById(L.q.brain).name, question:L.q.text, answer:L.q.answer, read:L.q.read&&L.q.read.primary||null} : null,
     intention:d.intention||null, win:d.win||null, gratitude:d.gratitude||null,
     ticks_done: S.habits.filter(function(h){return habitDone(h,k);}).map(function(h){return h.name;}),
-    ticks_missed: S.habits.filter(function(h){return h.req && !habitDone(h,k);}).map(function(h){return h.name;}),
+    ticks_missed: reqFor(k).filter(function(h){return !habitDone(h,k);}).map(function(h){return h.name;}),
     water_ml: waterMl(k)||null,
     phoenix:{ trained: ph.trained===undefined?null:(k===todayKey() && !ph.trained ? 'not yet (day still open)' : ph.trained), session: ph.session_name||null, weight_kg: S.weights[k]||ph.weight_kg||null, kcal: ph.kcal==null?'no data':ph.kcal, target_kcal: ph.target_kcal==null?'no data':ph.target_kcal } };
 }
@@ -1762,7 +1764,7 @@ function renderTrends(){
   g+=['M','T','W','T','F','S','S'].map(function(x){return '<b>'+x+'</b>';}).join('');
   for(var ci=0;ci<56;ci++){ var k=addDays(first,ci), c='', dd=diffDays(k,t);
     if(dd<0||k<start){ g+='<i></i>'; continue; }
-    if(isOff(k)) c='o'; else if(isPerfect(k)) c='p'; else if(dd===0) c=''; else { var req=S.habits.filter(function(h){return h.req;}), dn=req.filter(function(h){return habitDone(h,k);}).length; c= dn>=Math.ceil(req.length/2)?'h':'m'; }
+    if(isOff(k)) c='o'; else if(isPerfect(k)) c='p'; else if(dd===0) c=''; else { var req=reqFor(k), dn=req.filter(function(h){return habitDone(h,k);}).length; c= dn>=Math.ceil(req.length/2)?'h':'m'; }
     g+='<i class="'+c+(dd===0?' t':'')+'">'+(+k.slice(8))+'</i>'; }
   $('#cal').innerHTML=g; $('#chTag').textContent='streak '+streak()+' · best '+bestStreak();
   var tally={}, nm=0; for(var mi=1;mi<=30;mi++){ var mk=addDays(t,-mi); var md=S.days[mk]; if(md&&md.log&&md.log.miss){ nm++; (md.log.miss.reasons||[]).forEach(function(r){ tally[r]=(tally[r]||0)+1; }); } }
@@ -1936,10 +1938,11 @@ function renderSettings(){
   S.habits.forEach(function(h,i){
     var r=document.createElement('div'); r.className='set-h';
     r.innerHTML='<input value="'+esc(h.name)+'"><select>'+Object.keys(AUTO_LABEL).map(function(a){return '<option value="'+a+'"'+(a===h.auto?' selected':'')+'>'+AUTO_LABEL[a]+'</option>';}).join('')+'</select>'+
-      '<button class="btn sm" data-req>'+(h.req?'Req':'Bonus')+'</button><button class="btn sm" data-del>✕</button>';
+      '<button class="btn sm" data-req>'+(h.req?'Req':'Bonus')+'</button><button class="btn sm" data-wo>'+(h.workOnly?'Wkdays':'Daily')+'</button><button class="btn sm" data-del>✕</button>';
     $('input',r).onchange=function(){ h.name=this.value; save(); renderToday(); };
     $('select',r).onchange=function(){ h.auto=this.value; save(); renderToday(); };
     $('[data-req]',r).onclick=function(){ h.req=!h.req; save(); renderSettings(); renderAll(); };
+    $('[data-wo]',r).onclick=function(){ h.workOnly=!h.workOnly; save(); renderSettings(); renderAll(); };
     $('[data-del]',r).onclick=async function(){ if(await ask('Remove "'+h.name+'"?','Remove')){ S.habits.splice(i,1); save(); renderSettings(); renderAll(); } };
     he.appendChild(r);
   });
