@@ -488,6 +488,7 @@ table.tod th{color:var(--mut);font-weight:500}
       <button class="btn sm" id="expBtn">Export JSON</button>
       <label class="btn sm" style="text-align:center">Import<input type="file" id="impIn" accept="application/json" hidden></label>
       <button class="btn sm" id="syncBtn">Sync now</button>
+      <button class="btn sm" id="diagBtn">Copy diagnostics</button>
     </div>
     <p class="small muted" id="verTxt" style="margin:10px 0 0"></p>
   </div>
@@ -542,7 +543,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.12.4';
+var APP_VERSION = '1.12.5';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -1353,8 +1354,27 @@ var PROMPT_FEEL = SYS_BASE + 'This is a feelings-and-thoughts journal entry: it 
 var PROMPT_IDEA = SYS_BASE + 'Respond as a sharp, honest product strategist and thinking partner. Turn the rambling voice note into a crisp idea brief. Note the time of day and his energy state when the idea came — this feeds a map of his best creative windows. Be candid about weaknesses. Note how it connects to his other ventures or earlier ideas if relevant, and whether it competes for his limited time.\nReturn ONLY JSON: {"title":"","summary":"2 sentences","brains_check":[{"brain":"name","verdict":"how this idea looks through that brain (e.g. Red: what threat or risk does it trigger; Yellow: is there evidence; Blue: is the next action clear; Orange: who needs to trust it; Pink: what possibility it opens)"}],"core_insight":"","who_for":"","assumptions":[""],"risks":[""],"next_step":"smallest test this week","effort":"low|medium|high","excitement_vs_evidence":"one line on whether the energy is backed by evidence","captured_when":"time block + energy state at capture","connections":[""],"tags":[""]}';
 var PROMPT_WEEK = SYS_BASE + 'Respond as a performance psychologist running a weekly review. You have 7 days of check-in scores, tick completion, Phoenix training/weight/nutrition, and journal entries with prior reflections. Core goal (from his EPP debrief): energy efficiency — find his optimal daily performance routine. Use the timestamped energy pulses, check-in times, recovery timestamps, and when feelings/ideas entries were recorded to map his energy by time of day and by activity. Name his peak windows, slump windows, creative/idea windows, his biggest drains (esp. multi-stakeholder meetings, wearing the mask) and chargers, whether recovery (walks, snacks, breathing, water) measurably lifts the next pulse, and how often goalposts moved up. Then propose a concrete ideal day shape. Also look for patterns like sleep vs mood, training days vs stress, recurring journal themes. Do not invent data; say when data is thin. Treat null nutrition as "no data", never as zero.\nAlso check whether the ACTUAL weather (heat, feels-like temperature, humidity, rain, cloud) lines up with his energy, sleep, mood, pulses or missed days; say so plainly if there is no clear link. Also analyse missed days: count, the reasons he logged, the real pattern (e.g. a weekday, a sleep or meeting load that precedes misses) and one practical fix. Use his Sunday "common thread" answer if present.\nReturn ONLY JSON: {"headline":"one line","misses":{"count":0,"top_reasons":[""],"pattern":"","fix":""},"weather":"one or two sentences on whether weather showed up in the data","time_of_day":{"peak_windows":[""],"slump_windows":[""],"idea_windows":[""],"drains":[""],"chargers":[""],"recovery_effect":"","goalposts":"how often they moved and the cost","ideal_day":[{"time":"e.g. 5:00-7:00","do":"","why":""}]},"five_brains":{"strongest":"","weakest":"","trend":"how the brain scores moved across the week and why","rebalance":"one practice for next week"},"patterns":[""],"correlations":[{"finding":"","evidence":""}],"recurring_themes":[""],"wins":[""],"watch_outs":[""],"focus_next_week":["max 3"],"note":"short closing note"}';
 
+// Close a JSON object that was cut off mid-way: drop the half-written last value, close open strings/brackets.
+function repairJson(t){
+  var stack=[], inStr=false, esc=false, lastSafe=-1;
+  for(var i=0;i<t.length;i++){ var c=t[i];
+    if(inStr){ if(esc) esc=false; else if(c==='\\') esc=true; else if(c==='"') inStr=false; continue; }
+    if(c==='"') inStr=true; else if(c==='{'||c==='[') stack.push(c==='{'?'}':']');
+    else if(c==='}'||c===']'){ stack.pop(); lastSafe=i; }
+    else if(c===',' ) lastSafe=i-1;
+  }
+  for(var cut=lastSafe; cut>0; cut--){
+    var body=t.slice(0,cut+1).replace(/,\s*$/,''), st=[], s2=false, e2=false;
+    for(var k=0;k<body.length;k++){ var ch=body[k]; if(s2){ if(e2) e2=false; else if(ch==='\\') e2=true; else if(ch==='"') s2=false; continue; }
+      if(ch==='"') s2=true; else if(ch==='{') st.push('}'); else if(ch==='[') st.push(']'); else if(ch==='}'||ch===']') st.pop(); }
+    if(s2) continue;
+    try{ return JSON.parse(body+st.reverse().join('')); }catch(_e){}
+    var prev=t.lastIndexOf(',',cut-1); if(prev<0) break; cut=prev;
+  }
+  return null;
+}
 async function callClaude(prompt, payload){
-  var body = { model:S.settings.aiModel, max_tokens:1400,
+  var body = { model:S.settings.aiModel, max_tokens:/opus/.test(S.settings.aiModel)?1400:3000,
     messages:[{role:'user', content: brainsLens() + prompt + (S.settings.about ? '\n\nAbout Jon (from his 5 Brains assessment): '+S.settings.about : '') + '\n\nDATA:\n' + JSON.stringify(payload)}] };
   var limit = /opus/.test(body.model) ? 60000 : 75000; // Opus gets 60 s, then we fall back to Sonnet
   var ctl = window.AbortController ? new AbortController() : null, tm = ctl ? setTimeout(function(){ ctl.abort(); }, limit) : null;
@@ -1382,9 +1402,13 @@ async function callClaude(prompt, payload){
   var j; try{ j = await r.json(); }catch(_e){ throw new Error('The proxy sent back something that is not JSON'); }
   if(j && j.error) throw new Error('Proxy error: '+String(j.error.message||j.error).slice(0,140));
   var t=(j.content&&j.content[0]&&j.content[0].text)||'';
-  if(j.stop_reason==='max_tokens') throw new Error('Reply was cut short (the proxy limits reply length)');
-  var m=t.match(/\{[\s\S]*\}/); if(!m) throw new Error(t ? 'Reply had no structured result: '+t.slice(0,80) : 'Empty reply from the proxy (model '+body.model+')');
-  return JSON.parse(m[0]);
+  var i0=t.indexOf('{'); if(i0<0) throw new Error(t ? 'Reply had no structured result: '+t.slice(0,80) : 'Empty reply from the proxy (model '+body.model+')');
+  var m=t.match(/\{[\s\S]*\}/);
+  if(m){ try{ return JSON.parse(m[0]); }catch(_e){} }
+  // reply cut short (length limit): keep every complete field that did arrive
+  var fixed=repairJson(t.slice(i0));
+  if(fixed){ fixed._partial=true; return fixed; }
+  throw new Error(j.stop_reason==='max_tokens' ? 'Reply was cut short and could not be recovered' : 'Could not read the reply');
 }
 var _retrying=false;
 async function retryReflections(){
@@ -1504,6 +1528,7 @@ function openEntry(id){
   if(e.kind==='feelings'||e.kind==='ideas'||e.kind==='pulse') h+='<details'+(e.analysis?'':' open')+'><summary class="small muted" style="margin:6px 0">Transcript</summary><textarea id="shTx" rows="6">'+esc(e.transcript)+'</textarea></details>';
   if(e._busy) h+='<p class="muted"><span class="spin"></span> Reflecting… you can leave this screen.</p>';
   else if(!e.analysis && e._err) h+='<p class="small" style="color:var(--warm)">Your entry is saved. The reflection failed: '+esc(e._err)+'</p>';
+  if(e.analysis && e.analysis._partial) h+='<p class="small muted">This reflection was cut short, so a few sections may be missing. Tap Re-run reflection for the full version.</p>';
   h+=analysisHTML(e);
   h+='<div class="row" style="margin-top:16px">'+(e.kind==='feelings'||e.kind==='ideas'?'<button class="btn sm" id="shRe">'+(e.analysis?'Re-run reflection':'Reflect')+'</button>':'')+'<button class="btn sm" id="shDel" style="color:var(--red)">Delete</button></div>';
   $('#sheetBody').innerHTML=h; $('#sheet').classList.add('on');
@@ -1800,6 +1825,20 @@ function bindSettings(){
   $('#expBtn').onclick=function(){ var b=new Blob([JSON.stringify(S,null,1)],{type:'application/json'}); var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='5brains-'+todayKey()+'.json'; a.click(); };
   $('#impIn').onchange=function(){ var f=this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ try{ var s=JSON.parse(rd.result); if(!s.settings) throw 0; ask('Replace all local data with this file?','Replace').then(function(ok){ if(ok){ S=s; save(); renderAll(); toast('Imported'); } }); }catch(e){ toast('Not a 5 Brains export'); } }; rd.readAsText(f); };
   $('#syncBtn').onclick=function(){ fullSync(true); };
+  $('#diagBtn').onclick=function(){
+    var t=todayKey(), pend=S.entries.filter(function(e){return e._want&&!e.analysis;});
+    var lines=['5 Brains v'+APP_VERSION+' · '+new Date().toLocaleString('en-AU'),
+      'Signed in: '+(SESSION?'yes':'no')+' · last sync: '+(S.lastSync?new Date(S.lastSync).toLocaleString('en-AU'):'never'),
+      'Model: '+S.settings.aiModel+' · proxy: '+S.settings.aiUrl,
+      'Phoenix meals table: '+(S.feedErr?'error: '+S.feedErr:'ok'),
+      'Location for weather: '+(S.settings.trackLoc===false?'off':'on')+' · places today: '+(((S.days[t]||{}).log||{}).places||[]).length,
+      'Reflections pending: '+pend.length+(pend.length?' · last error: '+(pend[0]._err||'none'):''),
+      'Entries: '+S.entries.length+' · days logged: '+Object.keys(S.days).length,
+      'Screen: '+innerWidth+'x'+innerHeight+' · '+(navigator.standalone?'home-screen app':'browser')];
+    var txt=lines.join('\n');
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){ toast('Copied. Paste it into your chat with Claude.'); },
+      function(){ $('#sheetBody').innerHTML='<b>Diagnostics</b><textarea rows="9" style="margin-top:8px">'+esc(txt)+'</textarea><div class="sp"></div><button class="btn full" onclick="closeSheet()">Done</button>'; $('#sheet').classList.add('on'); });
+  };
   $('#jFilter').onchange=renderJournal;
   $$('[data-report]').forEach(function(b){ b.onclick=openReport; });
   $('#rpClose').onclick=closeReport; $('#rpAI').onclick=reportAI;

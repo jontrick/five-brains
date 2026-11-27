@@ -1,5 +1,5 @@
 // 5 Brains service worker — bump VERSION on every deploy to refresh the cache.
-const VERSION = 'fb-1.12.4';
+const VERSION = 'fb-1.12.5';
 const SHELL = ['./', './index.html', './manifest.json', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'];
 
