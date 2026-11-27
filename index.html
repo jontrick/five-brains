@@ -399,6 +399,11 @@ table.tod th{color:var(--mut);font-weight:500}
     <button class="btn pri full" data-report>Open report</button>
   </div>
   <div class="card">
+    <h2><i data-ic="target"></i> System review <span class="tag" id="srTag"></span></h2>
+    <p class="muted small" style="margin:0 0 10px">How much you actually use each part of the app, what's worth keeping, and what to simplify or add later. Do one after 2 weeks, then every 3 months.</p>
+    <button class="btn full" id="srOpen">Review the app</button>
+  </div>
+  <div class="card">
     <h2><i data-ic="compass"></i> Weekly review</h2>
     <p class="muted small" style="margin:0 0 10px">Reads the last 7 days of check-ins, journal entries and Phoenix data, then looks for patterns.</p>
     <button class="btn vio full" id="weeklyBtn">Run weekly review</button>
@@ -511,7 +516,7 @@ table.tod th{color:var(--mut);font-weight:500}
   </div>
 </div>
 
-<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI"><i data-ic="sparkle" class="sm mut"></i> Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button><button class="btn sm" id="rpFull">Include my entries: off</button></div><div class="rp" id="rp"></div></div>
+<div class="report" id="report"><div class="rp-bar"><button class="btn sm" id="rpClose">✕ Close</button><button class="btn sm" id="rpAI"><i data-ic="sparkle" class="sm mut"></i> Write AI summary</button><button class="btn sm pri" id="rpPrint" style="color:#0d1117">Save as PDF</button><button class="btn sm" id="rpHtml">Download</button><button class="btn sm" id="rpFull">Transcripts appendix: on</button></div><div class="rp" id="rp"></div></div>
 <div class="breathe" id="breathe"><div class="bt" id="bTxt">Get comfortable</div>
 <div class="bwrap"><svg class="bring" viewBox="0 0 240 240"><circle class="trk" cx="120" cy="120" r="110"/><circle class="arc" id="bArc" cx="120" cy="120" r="110"/></svg><div class="orb" id="orb"></div><div class="bsec" id="bSec"></div></div>
 <div id="bCnt" style="font-size:14px;opacity:.8">4 in · 6 out · 4 rounds</div>
@@ -543,7 +548,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.13.0';
+var APP_VERSION = '1.14.0';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -797,6 +802,72 @@ function openCloseDay(){
     toast(off?'Day closed. Enjoy the day off.':(m.length?'Day closed · '+m.length+' still open':'Day closed · everything done 👊'.replace(' 👊','')));
   };
 }
+// ───────── System review: usage measured from what you logged + your own verdicts ─────────
+function bump(k){ var t=todayKey(); S.usage=S.usage||{}; var u=S.usage[k]||(S.usage[k]={n:0,days:{}}); u.n++; u.days[t]=1; u.last=new Date().toISOString(); save(); }
+var FEATURES=[
+  ['am','Morning check-in', function(k,d,L){ return !!(d.energy_am||d.sleep_hours); }],
+  ['thoughts','Morning thoughts', function(k,d,L){ return !!(L.am_thoughts&&L.am_thoughts.trim()); }],
+  ['pm','Evening check-in', function(k,d,L){ return !!(d.energy_pm||d.mood); }],
+  ['question','Evening 5Brains question', function(k,d,L){ return !!(L.q&&L.q.answer); }],
+  ['pulse','Energy pulses', function(k){ return pulsesOn(k).length>0; }, function(k){ return pulsesOn(k).length; }],
+  ['feel','Feelings & thoughts journal', function(k){ return S.entries.some(function(e){return e.date===k&&e.kind==='feelings'&&!e._deleted;}); }],
+  ['ideas','Ideas journal', function(k){ return S.entries.some(function(e){return e.date===k&&e.kind==='ideas'&&!e._deleted;}); }],
+  ['walk','Walk timer / GPS', function(k,d,L){ return (L.walk||[]).length>0; }],
+  ['meals','Meals & locations', function(k){ return mealsOn(k).some(function(m){return m.loc;}); }],
+  ['breath','Breathing', function(k,d,L){ return (L.breath||[]).length>0; }],
+  ['water','Water bottles', function(k){ return waterMl(k)>0; }],
+  ['weigh','Weigh-in', function(k){ return !!(S.weights[k]||(S.phoenix[k]&&S.phoenix[k].weighed_in)); }],
+  ['ticks','Manual daily ticks', function(k,d){ return Object.keys(d.checks||{}).some(function(x){return d.checks[x];}); }],
+  ['close','Close the day', function(k,d,L){ return !!L.closed; }],
+  ['miss','Missed-day reasons', function(k,d,L){ return !!L.miss; }],
+  ['weekly','Weekly review', function(k){ return S.entries.some(function(e){return e.date===k&&e.kind==='weekly';}); }],
+  ['trends','Trends screen', function(k){ return !!(S.usage&&S.usage.view_trends&&S.usage.view_trends.days[k]); }],
+  ['report','Report for Dave', function(k){ return !!(S.usage&&S.usage.report&&S.usage.report.days[k]); }]
+];
+function usageStats(from,to){
+  var ks=rangeKeys(from,to).filter(function(k){return !isOff(k);}), n=Math.max(1,ks.length);
+  return FEATURES.map(function(f){ var used=0, count=0, last=null;
+    ks.forEach(function(k){ var d=S.days[k]||{checks:{}}, L=d.log||{}; if(f[2](k,d,L)){ used++; last=k; count+= f[3]?f[3](k):1; } });
+    return {id:f[0], name:f[1], days_used:used, of_days:ks.length, pct:Math.round(used/n*100), total:count, last_used:last}; });
+}
+function srDue(){ var r=(S.reviews||[]).slice(-1)[0]; if(!r) return diffDays(S.settings.start,todayKey())>=14; return todayKey()>=r.next; }
+function openSystemReview(){
+  bump('system_review');
+  var from=(S.reviews&&S.reviews.length)?S.reviews[S.reviews.length-1].date:S.settings.start, to=todayKey(), U=usageStats(from,to), prev=(S.reviews||[]).slice(-1)[0];
+  var V=(window._srVotes=window._srVotes||{});
+  var h='<div class="row" style="margin-bottom:8px"><b>System review</b><button class="btn sm" style="flex:none" id="shClose">Close</button></div>'+
+    '<p class="small muted" style="margin:0 0 10px">'+esc(niceDate(from))+' to '+esc(niceDate(to))+' · '+(U[0]?U[0].of_days:0)+' days (leave/sick/rest excluded). For each part: keep it, simplify it, or drop it.</p>';
+  U.forEach(function(u){ var p=prev&&prev.usage.filter(function(x){return x.id===u.id;})[0];
+    h+='<div class="card" style="margin:6px 0;padding:10px 12px"><div class="row"><b style="font-size:14px">'+esc(u.name)+'</b><span class="small muted" style="text-align:right">'+u.days_used+'/'+u.of_days+' days'+(u.total>u.days_used?' · '+u.total+' total':'')+(p?' · was '+p.pct+'%':'')+'</span></div>'+
+      '<div class="prog" style="margin:6px 0"><i style="width:'+u.pct+'%;background:'+(u.pct>=60?'var(--ok)':u.pct>=25?'var(--warm)':'var(--red)')+'"></i></div>'+
+      '<div class="chips pick" data-sv="'+u.id+'">'+['Keep','Simplify','Drop'].map(function(o){return '<span class="chip'+(V[u.id]===o?' on':'')+'">'+o+'</span>';}).join('')+'</div></div>';
+  });
+  h+='<div class="lbl"><span>What\'s annoying or not working?</span><button class="btn sm dict" data-dict="srWorse">Talk</button></div><textarea id="srWorse" class="grow" rows="2"></textarea>'+
+     '<div class="lbl"><span>What\'s genuinely helping?</span><button class="btn sm dict" data-dict="srBetter">Talk</button></div><textarea id="srBetter" class="grow" rows="2"></textarea>'+
+     '<div class="lbl"><span>Ideas to add later (parked for the next review)</span><button class="btn sm dict" data-dict="srPark">Talk</button></div><textarea id="srPark" class="grow" rows="2">'+esc(prev&&prev.parked||'')+'</textarea>'+
+     '<div class="sp"></div><button class="btn pri full" id="srAI">'+ic('sparkle','sm mut')+' Get a recommendation &amp; save review</button><div id="srOut"></div>';
+  if(S.reviews&&S.reviews.length) h+='<div class="lbl"><span>Past reviews</span></div>'+S.reviews.slice().reverse().map(function(r){ return '<div class="ent"><div class="t">'+esc(niceDate(r.date))+'<span class="tag">next '+esc(niceDate(r.next))+'</span></div><p>'+esc((r.ai&&r.ai.headline)||'Saved')+'</p></div>'; }).join('');
+  $('#sheetBody').innerHTML=h; SHEET_ID=null; $('#sheet').classList.add('on'); setTimeout(growAll,0);
+  $('#shClose').onclick=function(){ closeSheet(); renderAll(); };
+  $$('#sheetBody [data-sv]').forEach(function(g){ $$('.chip',g).forEach(function(c){ c.onclick=function(){ V[g.dataset.sv]=c.textContent; $$('.chip',g).forEach(function(z){z.classList.toggle('on',z===c);}); }; }); });
+  $$('#sheetBody [data-dict]').forEach(function(b){ b.onclick=function(){ dictate($('#'+b.dataset.dict), b); }; });
+  $('#srAI').onclick=async function(){
+    var btn=this; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Thinking…';
+    var rev={date:to, from:from, next:addDays(to,91), usage:U, votes:Object.assign({},V), worse:$('#srWorse').value.trim(), better:$('#srBetter').value.trim(), parked:$('#srPark').value.trim(), ai:null};
+    try{
+      rev.ai=await callClaude('You are helping Jon refine his own personal 5 Brains app after using it for a while. Goal from his EPP coach: energy efficiency, so the app itself must cost little energy to use. You get measured usage per feature (days used out of days available), his keep/simplify/drop votes, what annoys him, what helps, his parked ideas, and the previous review if any. Be blunt and practical. Recommend a leaner daily routine: what to keep, what to merge or simplify, what to switch off for now, and which parked ideas are worth adding at the next review. Base it on the numbers. Return ONLY JSON: {"headline":"one line","keep":[""],"simplify":[{"feature":"","how":""}],"switch_off":[{"feature":"","why":""}],"add_next_time":[""],"leaner_day":["the daily routine in 3-6 steps"],"watch_until_next_review":[""]}',
+        {review:rev, previous_review: (S.reviews||[]).slice(-1)[0]||null, days_tracked: rangeKeys(S.settings.start,to).length});
+    }catch(e){ toast('Saved without a recommendation: '+e.message); }
+    S.reviews=(S.reviews||[]).concat([rev]); save(); window._srVotes={};
+    var a=rev.ai, o='';
+    if(a){ o='<div class="an" style="margin-top:12px"><h3>Recommendation</h3><p><b>'+esc(a.headline)+'</b></p><h3>Keep</h3>'+li(a.keep)+
+      '<h3>Simplify</h3>'+(a.simplify||[]).map(function(x){return '<div class="callout"><b>'+esc(x.feature)+'</b> · '+esc(x.how)+'</div>';}).join('')+
+      '<h3>Switch off for now</h3>'+(a.switch_off||[]).map(function(x){return '<div class="callout w"><b>'+esc(x.feature)+'</b> · '+esc(x.why)+'</div>';}).join('')+
+      '<h3>Add at the next review</h3>'+li(a.add_next_time)+'<h3>Leaner day</h3>'+li(a.leaner_day)+'<h3>Watch until '+esc(niceDate(rev.next))+'</h3>'+li(a.watch_until_next_review)+'</div>'; }
+    $('#srOut').innerHTML=o+'<p class="small muted">Saved. Next review due '+esc(niceDate(rev.next))+'. Send me a screenshot of this and I\'ll make the changes.</p>';
+    btn.disabled=false; btn.textContent='Saved'; renderAll();
+  };
+}
 function renderMiss(){
   var box=$('#missBox'); if(!box) return; var k=pendingMiss(), h='';
   if(k){
@@ -812,7 +883,8 @@ function renderMiss(){
     h+='<div class="card"><h2>'+ic('compass')+' Week check: '+wm.length+' missed day'+(wm.length>1?'s':'')+'</h2><div class="chips" style="margin-bottom:8px">'+Object.keys(tally).map(function(r){return '<span class="chip">'+esc(r)+' ×'+tally[r]+'</span>';}).join('')+'</div>'+
       '<p class="qtext" style="font-size:16px">Looking at these, what\'s the real common thread, and what would stop it next week?</p><textarea id="wkAns" rows="3" placeholder="Type, or use your keyboard\'s mic"></textarea><div class="sp"></div><button class="btn pri full" id="wkSave">Save</button></div>';
   }
-  box.innerHTML=h;
+  if(srDue() && !(S.usage&&S.usage.system_review&&S.usage.system_review.days[t])) h+='<div class="card" style="border-color:var(--acc)"><h2>'+ic('target')+' Time to review the app</h2><p class="small muted" style="margin:0 0 8px">See what you actually use, and keep, simplify or drop each part.</p><button class="btn pri full" id="srNudge">Review the app</button></div>';
+  box.innerHTML=h; var sn=$('#srNudge'); if(sn) sn.onclick=openSystemReview;
   if(k){
     $$('#mChips .chip').forEach(function(c){ c.onclick=function(){ var r=c.textContent, i=MISS_SEL.indexOf(r); if(i>=0) MISS_SEL.splice(i,1); else MISS_SEL.push(r); c.classList.toggle('on'); }; });
     $('#mSave').onclick=function(){ if(!MISS_SEL.length && !$('#mNote').value.trim()){ toast('Pick a reason or add a note'); return; }
@@ -1458,6 +1530,7 @@ function entryRow(e){
 }
 function bindEntryRows(root){ $$('.ent',root).forEach(function(b){ b.onclick=function(){ openEntry(b.dataset.id); }; }); }
 function renderJournal(){
+  var st=$('#srTag'); if(st){ var lr=(S.reviews||[]).slice(-1)[0]; st.textContent= srDue()?'due now':(lr?'next '+niceDate(lr.next):'after 2 weeks'); st.className='tag'+(srDue()?' warn':''); }
   var f=$('#jFilter').value;
   var list=S.entries.filter(function(e){return !e._deleted && (f==='all'?e.kind!=='pulse':e.kind===f);});
   $('#entryList').innerHTML = list.length? list.map(entryRow).join('') : '<p class="muted" style="text-align:center;margin-top:30px">No entries yet. Tap Feelings or Ideas and talk.</p>';
@@ -1740,13 +1813,11 @@ function renderReport(){
   h+='<h2 class="pb">5. Reflections</h2>';
   if(A){ h+='<h3>Key patterns</h3>'+L(A.key_patterns)+'<h3>What worked</h3>'+L(A.what_worked)+'<h3>What didn\'t</h3>'+L(A.what_didnt)+'<h3>Recurring themes (journal)</h3>'+L(A.themes)+(A.ideas_digest&&A.ideas_digest.length?'<h3>Ideas digest</h3>'+L(A.ideas_digest):'')+'<h3>Proposed next phase</h3>'+L(A.next_phase)+'<h3>Questions for Dave</h3>'+L(A.questions_for_dave); }
   else h+='<p class="muted">Tap “Write AI summary” to draft patterns, what worked, themes and questions for Dave. Journal entries are summarised as themes only; no raw transcripts go in the report.</p>';
+  var js=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().sort(function(a,b){return a.created_at<b.created_at?-1:1;});
+  if(js.length){ h+='<h3>Journal: entry summaries</h3><table><tr><th>When</th><th>Type</th><th>Summary</th></tr>'+js.map(function(e){ var a=e.analysis, sm=a?(a.title?a.title+': ':'')+(a.summary||''):(e.transcript.split(/(?<=[.!?])\s/)[0].slice(0,160)+(e.transcript.length>160?'…':''));
+      return '<tr><td>'+esc(niceDate(e.date))+' '+hhmm(e.created_at)+'</td><td>'+(e.kind==='ideas'?'Idea':'Feelings &amp; thoughts')+'</td><td>'+esc(sm)+(a?'':' <span class="muted">(not reflected yet)</span>')+'</td></tr>'; }).join('')+'</table><p class="muted small">Full transcripts are in Appendix B.</p>'; }
   h+='<p class="muted small">Data: '+R.feelings+' feelings entries · '+R.ideas+' idea entries · '+R.pulses+' energy pulses · '+R.weeklies.length+' weekly reviews.</p>';
-  if(S.settings.reportFull){
-    var all=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().sort(function(a,b){return a.created_at<b.created_at?-1:1;});
-    h+='<h2 class="pb">Appendix: journal entries, word for word ('+all.length+')</h2><p class="muted small">Included because Jon switched this on. Turn it off before sharing if you want them private.</p>'+
-      all.map(function(e){ var a=e.analysis; return '<div style="break-inside:avoid;margin:10px 0"><h3>'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+' · '+(e.kind==='ideas'?'Idea':'Feelings &amp; thoughts')+(a&&a.title?': '+esc(a.title):'')+'</h3><p style="white-space:pre-wrap">'+esc(e.transcript)+'</p>'+(a&&(a.summary||a.one_action||a.next_step)?'<div class="box g"><b>Reflection:</b> '+esc(a.summary||'')+((a.one_action||a.next_step)?' <i>Next: '+esc(a.one_action||a.next_step)+'</i>':'')+'</div>':'')+'</div>'; }).join('');
-  }
-  h+='<h2 class="pb">Appendix: how the 5 Brains app works</h2>'+
+  h+='<h2 class="pb">Appendix A: how the 5 Brains app works</h2>'+
    '<p>This is a personal PWA on Jon\'s phone, built after the EPP 5Brains debrief as his “notepad” for logging what comes before his highs and lows. It is linked two ways with Phoenix, his training and nutrition app.</p>'+
    '<table><tr><th>Feature</th><th>What it captures</th><th>Why</th></tr>'+
    '<tr><td>Morning check-in</td><td>Sleep hours and quality, morning energy, the day\'s target</td><td>Baseline energy, and the original target to compare against at night</td></tr>'+
@@ -1762,6 +1833,12 @@ function renderReport(){
    '<tr><td>Phoenix link</td><td>Training sessions, weigh-ins, nutrition vs target in; weigh-ins, water and scores out</td><td>Connects body data to energy</td></tr></table>'+
    '<h3>How reflections are assessed</h3><p>Each entry is read, in this order of priority, through: the 5Brains lens; energy management (physical, emotional, mental and purpose energy; drains vs chargers); CBT thinking patterns; ACT (the gap between the calm face and the revs underneath, and moving-goalpost thinking); stress appraisal (threat vs challenge); self-determination needs (autonomy, competence, connection); and emotional granularity. This is structured self-reflection, not clinical assessment.</p>'+
    '<h3>Daily use</h3><ul><li><b>Wake:</b> morning check-in, 5Brains check, weigh-in</li><li><b>During the day:</b> a pulse at highs, lows and after big meetings; a walk, snack or breathing set after heavy blocks; voice notes as they come</li><li><b>Evening:</b> check-in and a diary review for tomorrow</li><li><b>Sunday:</b> weekly review</li></ul>';
+  // full transcripts always go at the very back
+  if(S.settings.reportFull!==false){
+    var all=S.entries.filter(function(e){return (e.kind==='feelings'||e.kind==='ideas')&&!e._deleted&&e.date>=R.from&&e.date<=R.to;}).slice().sort(function(a,b){return a.created_at<b.created_at?-1:1;});
+    h+='<h2 class="pb">Appendix B: full transcripts ('+all.length+')</h2><p class="muted small">Every Feelings &amp; thoughts and Ideas entry, in order, word for word.</p>'+
+      all.map(function(e){ var a=e.analysis; return '<div style="break-inside:avoid;margin:10px 0"><h3>'+esc(niceDate(e.date))+' · '+hhmm(e.created_at)+' · '+(e.kind==='ideas'?'Idea':'Feelings &amp; thoughts')+(a&&a.title?': '+esc(a.title):'')+'</h3><p style="white-space:pre-wrap">'+esc(e.transcript)+'</p>'+(a&&(a.summary||a.one_action||a.next_step)?'<div class="box g"><b>Reflection:</b> '+esc(a.summary||'')+((a.one_action||a.next_step)?' <i>Next: '+esc(a.one_action||a.next_step)+'</i>':'')+'</div>':'')+'</div>'; }).join('');
+  }
   $('#rp').innerHTML=h;
 }
 async function reportAI(){
@@ -1781,7 +1858,7 @@ async function reportAI(){
   }catch(e){ toast(e.message); }
   b.disabled=false; b.innerHTML=ic('sparkle','sm mut')+' Write AI summary';
 }
-function openReport(){ var rf=$('#rpFull'); if(rf) rf.textContent='Include my entries: '+(S.settings.reportFull?'on':'off'); renderReport(); $('#report').classList.add('on'); document.body.classList.add('printing'); }
+function openReport(){ bump('report'); var rf=$('#rpFull'); if(rf) rf.textContent='Transcripts appendix: '+(S.settings.reportFull!==false?'on':'off'); renderReport(); $('#report').classList.add('on'); document.body.classList.add('printing'); }
 function closeReport(){ $('#report').classList.remove('on'); document.body.classList.remove('printing'); }
 
 // ───────────────────────── settings ─────────────────────────
@@ -1850,8 +1927,9 @@ function bindSettings(){
   };
   $('#jFilter').onchange=renderJournal;
   $$('[data-report]').forEach(function(b){ b.onclick=openReport; });
+  $('#srOpen').onclick=openSystemReview;
   $('#rpClose').onclick=closeReport; $('#rpAI').onclick=reportAI;
-  $('#rpFull').onclick=function(){ S.settings.reportFull=!S.settings.reportFull; save(); this.textContent='Include my entries: '+(S.settings.reportFull?'on':'off'); renderReport(); };
+  $('#rpFull').onclick=function(){ S.settings.reportFull=(S.settings.reportFull===false); save(); this.textContent='Transcripts appendix: '+(S.settings.reportFull!==false?'on':'off'); renderReport(); };
   $('#rpPrint').onclick=function(){ try{ window.print(); }catch(e){ toast('Use Download, open it in Safari, then Share → Print'); } };
   $('#rpHtml').onclick=function(){ var css=Array.prototype.map.call(document.querySelectorAll('style'),function(x){return x.textContent;}).join('\n');
     var html='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>5 Brains report '+todayKey()+'</title><style>'+css+' .report{position:static;display:block}</style></head><body class="printing"><div class="report on"><div class="rp">'+$('#rp').innerHTML+'</div></div></body></html>';
@@ -1938,7 +2016,7 @@ async function fullSync(loud){
 
 // ───────────────────────── nav + boot ─────────────────────────
 var VIEW='today';
-$$('nav.tabs button').forEach(function(b){ b.onclick=function(){ VIEW=b.dataset.v; $$('nav.tabs button').forEach(function(x){x.classList.toggle('on',x===b);}); $$('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+VIEW);}); renderAll(); window.scrollTo(0,0); }; });
+$$('nav.tabs button').forEach(function(b){ b.onclick=function(){ VIEW=b.dataset.v; bump('view_'+VIEW); $$('nav.tabs button').forEach(function(x){x.classList.toggle('on',x===b);}); $$('.view').forEach(function(v){v.classList.toggle('on',v.id==='v-'+VIEW);}); renderAll(); window.scrollTo(0,0); }; });
 function renderAll(){ renderHeader(); if(VIEW==='today') renderToday(); if(VIEW==='journal') renderJournal(); if(VIEW==='trends') renderTrends(); if(VIEW==='settings') renderSettings(); }
 
 hydrateIcons(document); applySkin(S.settings.skin); bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
