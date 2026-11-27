@@ -554,7 +554,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.18.1';
+var APP_VERSION = '1.18.2';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -727,10 +727,17 @@ function dayType(k){ var d=S.days[k]; return (d&&d.log&&d.log.dayType)||null; }
 function isOff(k){ var t=dayType(k); return t==='leave'||t==='sick'||t==='rest'; }
 function isClosed(k){ var d=S.days[k]; return !!(d&&d.log&&d.log.closed); }
 function hasAnyData(k){ return !!(S.days[k] || S.water[k] || S.weights[k] || (S.phoenix[k] && (S.phoenix[k].trained||S.phoenix[k].weighed_in))); }
+// A day counts toward the streak if he showed up: either check-in, closed the day, any entry, or any tick.
+// Full days (every required habit) are tracked separately and never break the streak.
+function showedUp(k){ var d=S.days[k];
+  if(d&&d.checks&&Object.keys(d.checks).some(function(x){return d.checks[x];})) return true;
+  if(isClosed(k)) return true;
+  if(S.habits.some(function(h){ return (h.id==='am'||h.id==='pm') && habitDone(h,k); })) return true;
+  return S.entries.some(function(e){ return e.date===k && !e._deleted; }); }
 function streak(){
   // off days (leave / sick / rest) are skipped: they neither count nor break the streak
-  var t=todayKey(), n=0, k=(isPerfect(t)||isOff(t))?t:addDays(t,-1), guard=0;
-  while(guard++<1000 && k>=S.settings.start){ if(isOff(k)){ k=addDays(k,-1); continue; } if(!isPerfect(k)) break; n++; k=addDays(k,-1); }
+  var t=todayKey(), n=0, k=(showedUp(t)||isOff(t))?t:addDays(t,-1), guard=0;
+  while(guard++<1000 && k>=S.settings.start){ if(isOff(k)){ k=addDays(k,-1); continue; } if(!showedUp(k)) break; n++; k=addDays(k,-1); }
   return n;
 }
 function dayNum(){ return diffDays(S.settings.start, todayKey())+1; }
@@ -744,7 +751,7 @@ function ask(msg, yes){ return new Promise(function(res){ var m=$('#ask'); $('#a
   $('#askYes').onclick=function(){done(true);}; $('#askNo').onclick=function(){done(false);}; }); }
 var _tt; function toast(m){ var t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('on');},2200); }
 
-function bestStreak(){ var b=0,c=0; rangeKeys(S.settings.start,todayKey()).forEach(function(k){ if(isOff(k)) return; if(isPerfect(k)){c++; b=Math.max(b,c);} else if(k<todayKey()) c=0; }); return b; }
+function bestStreak(){ var b=0,c=0; rangeKeys(S.settings.start,todayKey()).forEach(function(k){ if(isOff(k)) return; if(showedUp(k)){c++; b=Math.max(b,c);} else if(k<todayKey()) c=0; }); return b; }
 function reqMissed(k){ return reqFor(k).filter(function(h){return !habitDone(h,k);}).map(function(h){return h.name;}); }
 function renderHeader(){
   var t=todayKey(), hit=0, n=0;
@@ -760,7 +767,7 @@ var MISS_SEL=[];
 function pendingMiss(){
   var t=todayKey();
   for(var i=7;i>=1;i--){ var k=addDays(t,-i); if(k<S.settings.start) continue;
-    var d=S.days[k]; if(isPerfect(k)||isOff(k)) continue; if(d&&d.log&&d.log.miss) continue; return k; }
+    var d=S.days[k]; if(showedUp(k)||isOff(k)) continue; if(d&&d.log&&d.log.miss) continue; return k; }
   return null;
 }
 function isSunday(){ return bris().getDay()===0; }
@@ -1793,7 +1800,7 @@ function renderTrends(){
   g+=['M','T','W','T','F','S','S'].map(function(x){return '<b>'+x+'</b>';}).join('');
   for(var ci=0;ci<56;ci++){ var k=addDays(first,ci), c='', dd=diffDays(k,t);
     if(dd<0||k<start){ g+='<i></i>'; continue; }
-    if(isOff(k)) c='o'; else if(isPerfect(k)) c='p'; else if(dd===0) c=''; else { var req=reqFor(k), dn=req.filter(function(h){return habitDone(h,k);}).length; c= dn>=Math.ceil(req.length/2)?'h':'m'; }
+    if(isOff(k)) c='o'; else if(isPerfect(k)) c='p'; else if(dd===0) c=''; else { var req=reqFor(k), dn=req.filter(function(h){return habitDone(h,k);}).length; c= (dn>=Math.ceil(req.length/2)||showedUp(k))?'h':'m'; }
     g+='<i class="'+c+(dd===0?' t':'')+'">'+(+k.slice(8))+'</i>'; }
   $('#cal').innerHTML=g; $('#chTag').textContent='streak '+streak()+' · best '+bestStreak();
   var tally={}, nm=0; for(var mi=1;mi<=30;mi++){ var mk=addDays(t,-mi); var md=S.days[mk]; if(md&&md.log&&md.log.miss){ nm++; (md.log.miss.reasons||[]).forEach(function(r){ tally[r]=(tally[r]||0)+1; }); } }
@@ -1821,7 +1828,7 @@ function reportStats(){
   var from=S.settings.start, to=todayKey(); if(S.settings.reportDate && S.settings.reportDate<to) to=S.settings.reportDate;
   var ks=rangeKeys(from,to), past=ks.filter(function(k){return k<todayKey()||isPerfect(k);});
   var tracked=ks.filter(hasAnyData), perfect=ks.filter(isPerfect);
-  var best=0,cur=0; ks.forEach(function(k){ if(isPerfect(k)){cur++; best=Math.max(best,cur);} else cur=0; });
+  var best=0,cur=0; ks.forEach(function(k){ if(isOff(k)) return; if(showedUp(k)){cur++; best=Math.max(best,cur);} else if(k<todayKey()) cur=0; });
   var D=function(f){ return ks.map(function(k){ var d=S.days[k]; return d?d[f]:null; }); };
   var pul=S.entries.filter(function(e){return e.kind==='pulse'&&!e._deleted&&e.date>=from&&e.date<=to;});
   // recovery effect: pulses within 90 min after a walk or breathing set vs others
@@ -1868,7 +1875,7 @@ function renderReport(){
   h+='<h1>5 Brains: progress report</h1><p class="muted">Jon · prepared for David Munro, Executive Performance Partners<br>'+esc(niceDate(R.from))+' to '+esc(niceDate(R.to))+' · '+R.days+' days · generated '+new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})+'</p>';
   h+='<h2>1. Summary</h2>';
   h+= A ? '<p contenteditable>'+esc(A.executive_summary)+'</p>' : '<p class="muted" contenteditable>Tap “Write AI summary” to draft this from your data, or type your own summary here.</p>';
-  h+='<div class="kpis"><div class="kpi"><b>'+R.tracked+'/'+R.days+'</b><span>days tracked</span></div><div class="kpi"><b>'+R.perfect+'</b><span>perfect days</span></div><div class="kpi"><b>'+R.best+'</b><span>longest streak</span></div><div class="kpi"><b>'+R.pulses+'</b><span>energy pulses logged</span></div>'+
+  h+='<div class="kpis"><div class="kpi"><b>'+R.tracked+'/'+R.days+'</b><span>days tracked</span></div><div class="kpi"><b>'+R.perfect+'</b><span>full days</span></div><div class="kpi"><b>'+R.best+'</b><span>longest streak</span></div><div class="kpi"><b>'+R.pulses+'</b><span>energy pulses logged</span></div>'+
      '<div class="kpi"><b>'+fmt(R.pulseE)+'</b><span>avg energy (pulses)</span></div><div class="kpi"><b>'+fmt(R.revs)+'</b><span>avg revs underneath</span></div><div class="kpi"><b>'+fmt(R.sleep,' h')+'</b><span>avg sleep</span></div><div class="kpi"><b>'+R.trained+'</b><span>training sessions</span></div></div>';
   h+='<h2>2. Core theme: energy efficiency</h2><p>Performance = energy × capability. Capability is constant and energy fluctuates. The goal is the same or a better outcome for less energy, finishing with 20% in the tank.</p>';
   h+='<h3>Focus point 1: protect energy through the diary</h3><table><tr><th>Measure</th><th>Result</th></tr>'+
@@ -1916,7 +1923,7 @@ function renderReport(){
    '<tr><td>Energy pulse</td><td>Timestamped energy, revs underneath, current activity, and what came before</td><td>David\'s notepad habit; builds the time-of-day map</td></tr>'+
    '<tr><td>Active recovery</td><td>One-tap 7-min walks, protein/carb snacks, and a guided 4-in/6-out breathing set (×4)</td><td>Focus point 2, and its measured effect on the next pulse</td></tr>'+
    '<tr><td>Water</td><td>Daily water, shared with Phoenix</td><td>Recovery</td></tr>'+
-   '<tr><td>Daily ticks</td><td>Diary reviewed, walk-and-talks, habits; several auto-tick from data</td><td>Habit building: a full-day streak, and missed days logged with a reason</td></tr>'+
+   '<tr><td>Daily ticks</td><td>Diary reviewed, walk-and-talks, habits; several auto-tick from data</td><td>Habit building: a streak of days you showed up (any check-in, entry or tick), full days counted separately, and days you didn\'t show up logged with a reason</td></tr>'+
    '<tr><td>Evening check-in</td><td>Energy, mood, stress, focus, whether the goalposts moved, original target hit, win, gratitude</td><td>Catches the mid-day upward goal reset</td></tr>'+
    '<tr><td>Voice journal: Feelings</td><td>Spoken entry, transcribed, then given a structured reflection</td><td>Processing; spots patterns over time</td></tr>'+
    '<tr><td>Voice journal: Ideas</td><td>Spoken idea, turned into a brief, logged with time and energy at capture</td><td>Finds creative windows</td></tr>'+
