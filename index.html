@@ -554,7 +554,7 @@ table.tod th{color:var(--mut);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
-var APP_VERSION = '1.18.2';
+var APP_VERSION = '1.18.3';
 
 // ───────────────────────── config ─────────────────────────
 var SUPABASE_URL = 'https://mxtowhccuqarszcwpbkq.supabase.co';
@@ -2124,6 +2124,29 @@ $$('nav.tabs button').forEach(function(b){ b.onclick=function(){ VIEW=b.dataset.
 function renderAll(){ renderHeader(); if(VIEW==='today') renderToday(); if(VIEW==='journal') renderJournal(); if(VIEW==='trends') renderTrends(); if(VIEW==='settings') renderSettings(); }
 
 hydrateIcons(document); applySkin(S.settings.skin); bindToday(); bindRec(); bindSettings(); renderAll(); initSB();
+// ── Drafts: anything typed or dictated but not yet logged is kept, so a screen lock, iOS dropping the app,
+// or an update reload never loses it. Saved every 1.5 s and whenever the app goes to the background.
+var DRAFT_IDS=['pNote','cNote','mNote','wkAns'];
+function saveDrafts(){ try{
+  var f={}; DRAFT_IDS.forEach(function(id){ var el=document.getElementById(id); if(el&&el.value.trim()) f[id]=el.value; });
+  var recOn=$('#rec').classList.contains('on'), rt=$('#recTx').value;
+  var pulOn=!!(PUL&&(PUL.e||PUL.r||(PUL.ctx&&PUL.ctx.length)));
+  if(!Object.keys(f).length && !(recOn&&rt.trim()) && !pulOn){ localStorage.removeItem('fb_drafts'); return; }
+  localStorage.setItem('fb_drafts', JSON.stringify({day:todayKey(), at:Date.now(), f:f, pul:pulOn?{e:PUL.e,r:PUL.r,ctx:PUL.ctx}:null, rec:recOn&&rt.trim()?{mode:REC.mode,tx:rt}:null}));
+}catch(e){} }
+function restoreDrafts(){ try{
+  var D=JSON.parse(localStorage.getItem('fb_drafts')||'null'); if(!D||D.day!==todayKey()||Date.now()-D.at>12*3600e3) return;
+  var got=false;
+  if(D.pul){ PUL.e=D.pul.e; PUL.r=D.pul.r; PUL.ctx=D.pul.ctx||[]; got=true; }
+  Object.keys(D.f||{}).forEach(function(id){ var el=document.getElementById(id); if(el&&!el.value.trim()){ el.value=D.f[id]; autoGrow&&autoGrow(el); got=true; } });
+  if(D.pul||(D.f&&D.f.pNote)){ FOLD.pulse=false; renderPulse(); applyFolds(); }
+  if(D.rec){ openRec(D.rec.mode); $('#recTx').value=D.rec.tx; got=true; }
+  if(got) toast('Picked up where you left off');
+}catch(e){} }
+restoreDrafts();
+setInterval(saveDrafts,1500);
+document.addEventListener('visibilitychange',function(){ if(document.hidden) saveDrafts(); });
+window.addEventListener('pagehide',saveDrafts);
 samplePlace(false).then(function(){ logWeather(); });
 setTimeout(retryReflections, 2500);
 document.addEventListener('visibilitychange',function(){ if(!document.hidden){ FOLD={}; renderAll(); fullSync(); setTimeout(retryReflections, 2500); samplePlace(false).then(function(){ logWeather(); }); } });
@@ -2136,7 +2159,12 @@ if('serviceWorker' in navigator){
   }).catch(function(){});
   // When a new version takes over, reload once so you're on it straight away.
   var _swReloaded=false, _hadController=!!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!_hadController||_swReloaded) return; _swReloaded=true; location.reload(); });
+  // Never reload in the middle of typing or talking: wait until the app goes to the background (drafts are saved first).
+  var _swPending=false;
+  function _swBusy(){ var a=document.activeElement; return !!(REC.live||DICT.on||DICT.want||(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT'))||$('#rec').classList.contains('on')||$('#sheet').classList.contains('on')); }
+  function _swReload(){ if(_swReloaded) return; _swReloaded=true; saveDrafts(); location.reload(); }
+  navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!_hadController||_swReloaded) return; if(_swBusy()){ _swPending=true; return; } _swReload(); });
+  document.addEventListener('visibilitychange',function(){ if(document.hidden && _swPending) _swReload(); });
 }
 </script>
 </body>
